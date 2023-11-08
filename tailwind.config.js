@@ -9,11 +9,8 @@ export default {
           secondary: "#F9B572",
           ternary: "#F6F1EE",
         },
-        purple: {
-          primary: "#363062",
-        },
         blue: {
-          primary: "#186ADE",
+          primary: "#363062",
           secondary: "#6586C9",
           ternary: "#91AFF9",
         },
@@ -22,18 +19,18 @@ export default {
           secondary: "#76DD52",
         },
         red: {
-          primary: "#F14747",
+          primary: "#F14747"
         },
         mono: {
           white: "#FFFFFF",
           off_white: "#F7F7F7",
           light_grey: "#A8A8A8",
           grey: "#6B6B6B",
-        },
+        }
       },
       fontFamily: {
-        montserrat: ["Montserrat", "sans-serif"],
-      },
+        montserrat: ['Montserrat', 'sans-serif'],
+      }
     },
   },
   plugins: [],
