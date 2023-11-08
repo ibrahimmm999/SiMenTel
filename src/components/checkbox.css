@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.checkmark:checked::before{
+    content: '\2713'
+}
