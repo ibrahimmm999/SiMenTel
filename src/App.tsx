@@ -1,36 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-import './App.css'
+import {
+  Outlet,
+  Route,
+  RouterProvider,
+  Routes,
+  createBrowserRouter,
+} from "react-router-dom";
+import Navbar from "./components/navbar";
 
-function App() {
-  const [count, setCount] = useState(0)
+const router = createBrowserRouter([{ path: "*", Component: Root }]);
+
+const ProtectedRoute = () => {
+  // const token = Cookies.get("access_token");
+
+  // if (!token) {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   return (
     <>
-      <div>
-        {/* <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a> */}
-        Kontol
-      </div>
-      <h1 className='text-5xl font-black'>Vite + React</h1>
-      {/* <div className="card">
-        <button onClick={() => setCount((count) => count + 1)} className='text-red-600'>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div> */}
-      {/* <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p> */}
+      <Navbar />
+      <Outlet />
     </>
-  )
+  );
+};
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
 
-export default App
+function Root() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Dummy title={"Login"} />} />
+      <Route path="*" element={<Dummy title={"Not Found"} />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dummy title={"Home"} />} />
+        <Route path="/room" element={<Dummy title={"Room"} />} />
+        <Route path="/maintenance" element={<Dummy title={"Maintenance"} />} />
+        <Route path="/staff" element={<Dummy title={"Staff"} />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function Dummy({ title }: { title: string }) {
+  return (
+    <div className="min-h-screen w-full flex justify-center items-center">
+      {title}
+    </div>
+  );
+}
