@@ -3,9 +3,8 @@ import { BiSolidPencil } from "react-icons/bi";
 import { FaTrashCan } from "react-icons/fa6";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 
-
 function Action({ id, status }: { id: number; status: string }) {
-    console.log(id);
+  console.log(id);
   return (
     <>
       {status == "WAITING" ? (
