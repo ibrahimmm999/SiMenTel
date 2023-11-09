@@ -28,6 +28,7 @@ function Search({
     <>
       <div className={style + " w-full"}>
         <div className="pointer-events-none flex w-full justify-between rounded-lg border-2 border-[#A8A8A8] px-2 focus-within:border-kOrange-400 hover:border-kOrange-200 hover:focus-within:border-kOrange-400 disabled:border-[#6B6B6B]">
+          <img src="assets/search.svg" alt="" />
           <input
             required={required}
             tabIndex={0}
@@ -37,7 +38,6 @@ function Search({
             value={inputValue}
             onChange={handleChange}
           />
-          <img src="assets/search.svg" alt="" />
         </div>
       </div>
     </>
