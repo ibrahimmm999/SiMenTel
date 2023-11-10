@@ -115,10 +115,10 @@ function Navbar() {
             <img
               src={Logo}
               alt="Elweha"
-              className="mx-auto mb-7 mt-2 h-[60px] xl:hidden"
+              className="mx-auto mb-7 mt-5 h-[40px] xl:hidden"
             />
           </NavLink>
-          <div className="flex flex-col gap-[8px] px-7 xl:mt-0 xl:flex-row xl:items-center xl:gap-[16px] xl:px-0">
+          <div className="flex flex-col gap-[8px] px-7 xl:mt-0 xl:flex-row xl:items-center xl:gap-[16px] xl:px-0 ">
             <NavLink
               to="/"
               className={`${
@@ -152,7 +152,7 @@ function Navbar() {
               Staff
             </NavLink>
             <div className="hidden h-12 w-[1px] bg-mono-light_grey xl:block"></div>
-            <div className="account-detail group absolute bottom-3 p-3 xl:relative xl:bottom-0">
+            <div className="account-detail group p-3 mt-[60%] xl:mt-0">
               <>
                 <div
                   className="account-detail hamburger flex cursor-pointer items-center"
@@ -164,24 +164,26 @@ function Navbar() {
                     alt="Profile"
                   />
                   <div className="account-detail hamburger ml-3">
-                    <p className="hamburger account-detail w-[160px] overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-bold text-purple-primary group-hover:text-orange-primary md:w-[350px] xl:w-[180px]">
+                    <p className="hamburger account-detail w-[160px] overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-bold text-purple-primary xl:group-hover:text-orange-primary md:w-[350px] xl:w-[180px]">
                       {"Komeng Roki"}
                     </p>
-                    <p className="hamburger account-detail text-[14px] text-purple-primary group-hover:text-orange-primary">
+                    <p className="hamburger account-detail text-[14px] text-purple-primary xl:group-hover:text-orange-primary">
                       Admin
                     </p>
                   </div>
                 </div>
-                {isAccount && (
-                  <div className="absolute flex w-full -translate-y-44 flex-col bg-white p-3 shadow-lg xl:translate-y-4">
-                    <div
-                      onClick={undefined}
-                      className="cursor-pointer p-3 text-[16px] font-bold text-red-primary hover:text-orange-secondary"
-                    >
-                      Keluar
-                    </div>
+                <div
+                  className={`block xl:${
+                    isAccount ? "block" : "hidden"
+                  } relative w-full bg-white xl:p-3 xl:shadow-lg xl:absolute xl:translate-y-4`}
+                >
+                  <div
+                    onClick={undefined}
+                    className="mt-4 xl:mt-0 cursor-pointer p-3 text-[16px] font-bold text-red-primary hover:text-orange-secondary"
+                  >
+                    Keluar
                   </div>
-                )}
+                </div>
               </>
             </div>
           </div>
