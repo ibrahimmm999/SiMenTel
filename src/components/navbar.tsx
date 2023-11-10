@@ -50,7 +50,7 @@ function Navbar() {
 
   return (
     <>
-      <div className="fixed z-50 flex h-[80px] w-full items-center justify-between bg-white bg-opacity-50 px-3 shadow-md backdrop-blur-sm xl:px-7">
+      <div className="fixed z-50 flex h-[80px] w-full items-center justify-between bg-white bg-opacity-50 px-3 shadow-md backdrop-blur-sm xl:pr-10 xl:pl-20">
         <button
           type="button"
           className={`${
