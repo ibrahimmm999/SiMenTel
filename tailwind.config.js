@@ -24,6 +24,9 @@ export default {
         red: {
           primary: "#F14747",
         },
+        yellow: {
+          primary: "#D9DD02",
+        },
         mono: {
           white: "#FFFFFF",
           off_white: "#F7F7F7",
