@@ -6,6 +6,7 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import Navbar from "./components/navbar";
+import Login from "./pages/login/page";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
@@ -31,7 +32,7 @@ export default function App() {
 function Root() {
   return (
     <Routes>
-      <Route path="/login" element={<Dummy title={"Login"} />} />
+      <Route path="/login" element={<Login />} />
       <Route path="*" element={<Dummy title={"Not Found"} />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Dummy title={"Home"} />} />
