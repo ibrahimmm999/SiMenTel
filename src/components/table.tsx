@@ -26,7 +26,7 @@ function Table({
   };
   return (
     <>
-      <div className="flex overflow-visible">
+      <div className="flex overflow-auto">
         <table className="min-w-full overflow-visible">
           <thead>
             <tr>
