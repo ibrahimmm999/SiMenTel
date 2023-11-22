@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 function Paginate({
   totalPages,
@@ -58,7 +59,7 @@ function Paginate({
   };
   return (
     <>
-      <div className="mt-8 flex w-full grow flex-col items-center justify-end xl:flex-row xl:items-end xl:justify-between">
+      <div className="mt-8 flex w-full grow flex-col items-center">
         <ul className="flex w-auto items-center justify-center gap-2">
           <li
             className={
@@ -68,7 +69,7 @@ function Paginate({
             }
             onClick={() => handlePageChange(currentPage - 1)}
           >
-            <img src="assets/less.svg" />
+            <IoIosArrowBack />
           </li>
           {renderPage()}
           <li
@@ -79,7 +80,7 @@ function Paginate({
             }
             onClick={() => handlePageChange(currentPage + 1)}
           >
-            <img src="assets/more.svg" />
+            <IoIosArrowForward />
           </li>
         </ul>
       </div>

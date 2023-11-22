@@ -6,6 +6,8 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import Navbar from "./components/navbar";
+import Login from "./pages/login/page";
+import DaftarUser from "./pages/daftarUser/page";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
@@ -31,13 +33,13 @@ export default function App() {
 function Root() {
   return (
     <Routes>
-      <Route path="/login" element={<Dummy title={"Login"} />} />
+      <Route path="/login" element={<Login />} />
       <Route path="*" element={<Dummy title={"Not Found"} />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Dummy title={"Home"} />} />
         <Route path="/room" element={<Dummy title={"Room"} />} />
         <Route path="/maintenance" element={<Dummy title={"Maintenance"} />} />
-        <Route path="/staff" element={<Dummy title={"Staff"} />} />
+        <Route path="/staff" element={<DaftarUser />} />
       </Route>
     </Routes>
   );

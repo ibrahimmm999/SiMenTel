@@ -1,12 +1,10 @@
 function Table({
   data,
   header,
-  role,
   isLoading,
 }: {
   data: any[];
   header: any[];
-  role: string;
   isLoading: boolean;
 }) {
   const Load = () => {
@@ -28,7 +26,7 @@ function Table({
   };
   return (
     <>
-      <div className="flex overflow-visible">
+      <div className="flex overflow-auto">
         <table className="min-w-full overflow-visible">
           <thead>
             <tr>
@@ -42,13 +40,6 @@ function Table({
                   </th>
                 );
               })}
-              {role == "Staff" ? (
-                <th className="h-auto w-auto border-collapse text-white bg-orange-primary px-2 py-1 text-center font-normal xl:px-4 truncate">
-                  Laporan
-                </th>
-              ) : (
-                ""
-              )}
             </tr>
           </thead>
           <tbody>
@@ -68,13 +59,6 @@ function Table({
                         </td>
                       );
                     })}
-                    {role == "Staff" ? (
-                      <td className="h-auto w-auto border-collapse border-b-2 border-mono-grey px-2 py-3 text-center xl:px-4 min-w-max">
-                        Upload
-                      </td>
-                    ) : (
-                      ""
-                    )}
                   </tr>
                 );
               })

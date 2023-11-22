@@ -24,12 +24,16 @@ export default {
         red: {
           primary: "#F14747",
         },
+        yellow: {
+          primary: "#D9DD02",
+        },
         mono: {
           white: "#FFFFFF",
-          off_white: "#F7F7F7",
           light_grey: "#A8A8A8",
           grey: "#6B6B6B",
+          darkGrey: "#4F4A45",
         },
+        background: "#FAFAFF",
       },
       fontFamily: {
         montserrat: ["Montserrat", "sans-serif"],
