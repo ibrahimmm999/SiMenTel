@@ -9,6 +9,7 @@ function Textfield({
   useLabel,
   labelText,
   labelStyle,
+  onChange,
 }: {
   type: "field" | "password" | "search" | "email";
   placeholder: string;
@@ -17,12 +18,8 @@ function Textfield({
   useLabel?: boolean;
   labelText?: string;
   labelStyle?: string;
+  onChange?: React.ChangeEventHandler<HTMLInputElement> | undefined;
 }) {
-  const [inputValue, setInputValue] = useState(value || "");
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
-  };
-
   //password attribute
   const [showPassword, setShowPassword] = useState("password");
   const [icon, setIcon] = useState(<AiFillEyeInvisible></AiFillEyeInvisible>);
@@ -51,8 +48,8 @@ function Textfield({
               type="text"
               required={required}
               placeholder={placeholder}
-              value={inputValue}
-              onChange={handleChange}
+              value={value}
+              onChange={onChange}
               className="grow focus:outline-none w-full"
             />
           </div>
@@ -71,7 +68,7 @@ function Textfield({
               type={showPassword}
               required={required}
               placeholder={placeholder}
-              onChange={handleChange}
+              onChange={onChange}
               className="grow focus:outline-none w-full"
             />
             <div
@@ -99,7 +96,7 @@ function Textfield({
               type="text"
               required={required}
               placeholder={placeholder}
-              onChange={handleChange}
+              onChange={onChange}
               className="grow focus:outline-none w-full"
             />
           </div>
@@ -118,10 +115,10 @@ function Textfield({
             type="email"
             placeholder={placeholder}
             className={`w-full flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus:border-orange-primary focus:outline-orange-primary rounded-[10px] ${
-              inputValue &&
+              value &&
               "invalid:border-red-primary invalid:focus:outline-red-primary peer"
             }`}
-            onChange={handleChange}
+            onChange={onChange}
           />
           <p className={`text-red-primary hidden peer-invalid:block`}>
             Masukkan Email yang valid!
