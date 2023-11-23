@@ -17,6 +17,9 @@ interface DropdownProps {
   value?: { value: string; label: string };
   options: any;
   required?: boolean;
+  label?: string;
+  useLabel?: boolean;
+  height?: string;
 }
 
 const Dropdown = ({
@@ -25,37 +28,46 @@ const Dropdown = ({
   options,
   value,
   required,
+  label,
+  useLabel,
+  height,
 }: DropdownProps) => {
-  
   return (
-    <Select
-      defaultValue={value}
-      required={required}
-      options={options}
-      placeholder={placeholder}
-      onChange={onChange}
-      isSearchable={true}
-      theme={(theme) => ({
-        ...theme,
-        borderRadius: 10,
-        border: "2px",
+    <>
+      {useLabel && <label>{label}</label>}
+      <Select
+        required={required}
+        options={options}
+        placeholder={placeholder}
+        onChange={onChange}
+        isSearchable={true}
+        value={value}
+        theme={(theme) => ({
+          ...theme,
+          borderRadius: 10,
+          border: "2px",
 
-        colors: {
-          ...theme.colors,
-          primary: "#ED7D31",
-        },
-      })}
-      styles={{
-        control: (baseStyles, state) => ({
-          ...baseStyles,
-          height: "44px",
-          border: state.isFocused ? "" : "2px solid #6B6B6B",
-          "&:hover": {
-            borderColor: state.isFocused ? "#ED7D31" : "#ED7D31",
+          colors: {
+            ...theme.colors,
+            primary: "#ED7D31",
           },
-        }),
-      }}
-    />
+        })}
+        styles={{
+          control: (baseStyles, state) => ({
+            ...baseStyles,
+            height: "100%",
+            border: state.isFocused ? "" : "2px solid #6B6B6B",
+            "&:hover": {
+              borderColor: state.isFocused ? "#ED7D31" : "#ED7D31",
+            },
+          }),
+          container: (baseStyles) => ({
+            ...baseStyles,
+            height: height,
+          }),
+        }}
+      />
+    </>
   );
 };
 

@@ -6,9 +6,10 @@ import Textfield from "../../components/textfield";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/api";
 import User from "../../interfaces/user";
-import { toastError } from "../../components/toast";
+import { toastError, toastSuccess } from "../../components/toast";
 import Action from "../../components/action";
 import Modal from "../../components/modal";
+import Dropdown from "../../components/dropdown";
 
 function DaftarUser() {
   const column = ["No", "Nama", "Email", "Kontak", "Role", "Action"];
@@ -20,53 +21,92 @@ function DaftarUser() {
   const [idEdit, setIdEdit] = useState<string>("");
 
   const [nama, setNama] = useState<string>("");
+  const [contact, setContact] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [role, setRole] = useState<{ label: string; value: string }>();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data, error } = await supabase.from("users").select("*");
-
-        if (error) {
-          throw new Error(`Error fetching user data: ${error.message}`);
-        }
-
-        if (data && data.length > 0) {
-          var i = 0;
-          var dataUser: User[] = data.map((e) => {
-            i++;
-            return {
-              id: i.toString(),
-              name: e.name,
-              email: e.email,
-              contact: e.contact,
-              role: e.role,
-              action: (
-                <Action
-                  id={e.id}
-                  status={"WAITING"}
-                  onChange={(e) => {
-                    setIdEdit(e);
-                    setShowEditPopUp(true);
-                  }}
-                />
-              ),
-            };
-          });
-          setUsers(dataUser);
-        } else {
-          toastError("Data User not found");
-        }
-      } catch (error) {
-        toastError(error as string);
+  const fetchUser = async () => {
+    try {
+      if ((await supabase.auth.getUser()).data.user == null) {
+        throw "Not Authenticated";
       }
-    };
+
+      const { data, error } = await supabase.from("users").select("*");
+
+      if (error) {
+        throw `Error fetching user data: ${error.message}`;
+      }
+
+      if (data && data.length > 0) {
+        var i = 0;
+        var dataUser: User[] = data.map((e) => {
+          i++;
+          return {
+            id: i.toString(),
+            name: e.name,
+            email: e.email,
+            contact: e.contact,
+            role: e.role,
+            action: (
+              <Action
+                id={e.id}
+                status={"WAITING"}
+                onChange={(id) => {
+                  setIdEdit(id);
+                  setNama(data.filter((val: User) => val.id == id)[0].name);
+                  setContact(
+                    data.filter((val: User) => val.id == id)[0].contact
+                  );
+                  setRole({
+                    label: data.filter((val: User) => val.id == id)[0].role,
+                    value: data.filter((val: User) => val.id == id)[0].role,
+                  });
+                  setShowEditPopUp(true);
+                }}
+              />
+            ),
+          };
+        });
+        setUsers(dataUser);
+      } else {
+        toastError("Data User not found");
+      }
+    } catch (error) {
+      toastError(error as string);
+    }
+  };
+  useEffect(() => {
     fetchUser();
   }, []);
 
-  const editUser = async () => {};
+  const editUser = async () => {
+    try {
+      if ((await supabase.auth.getUser()).data.user == null) {
+        throw "Not Authenticated";
+      }
+
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("users")
+        .update({ name: nama, contact: contact, role: role?.value })
+        .eq("id", idEdit)
+        .select();
+      if (data && data.length > 0) {
+        fetchUser();
+        toastSuccess("Edit User Successfully");
+        setShowEditPopUp(false);
+      }
+      if (error) {
+        throw error.message;
+      }
+    } catch (error) {
+      toastError(error as string);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const tambahUser = async () => {};
 
@@ -91,7 +131,7 @@ function DaftarUser() {
                   type="field"
                   useLabel
                   labelText="Nama"
-                  placeholder="Masukkan Nama Anda"
+                  placeholder="Masukkan Nama"
                   required
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
@@ -99,45 +139,38 @@ function DaftarUser() {
               </div>
               <div className="w-[50%]">
                 <Textfield
-                  type="email"
+                  type="field"
                   useLabel
-                  labelText="Email"
-                  placeholder="Masukkan Email Anda"
+                  labelText="Kontak"
+                  placeholder="Masukkan Kontak"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
                 />
               </div>
             </div>
             <div className="flex w-full gap-2 mb-7">
-              <div className="w-[50%]">
-                <Textfield
-                  type="password"
+              <div className="w-[50%] max-h-full">
+                <Dropdown
+                  placeholder={"Masukkan Role"}
+                  options={[
+                    { label: "admin", value: "admin" },
+                    { label: "user", value: "user" },
+                  ]}
                   useLabel
-                  labelText="Password"
-                  placeholder="Masukkan Password Anda"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  label="Role"
+                  height="51.2px"
+                  value={role}
+                  onChange={(val) => setRole(val!)}
                 />
               </div>
-              <div className="w-[50%]">
-                <Textfield
-                  type="email"
-                  useLabel
-                  labelText="Email"
-                  placeholder="Masukkan Email Anda"
-                  required
-                  value={email}
-                />
-              </div>
+              <div className="w-[50%]"></div>
             </div>
             <div className="flex justify-end mt-16 gap-4">
               <Button
                 type="button"
                 color="red"
                 text="Batalkan"
-                isLoading={isLoading}
                 onClick={() => setShowEditPopUp(false)}
               />
               <Button
@@ -165,20 +198,73 @@ function DaftarUser() {
                 <Textfield
                   type="field"
                   useLabel
-                  labelText="Lokasi"
-                  placeholder="Nama Lokasi"
+                  labelText="Nama"
+                  placeholder="Masukkan Nama"
                   required
-                  value={"lokasi"}
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
                 />
               </div>
               <div className="w-[50%]">
                 <Textfield
+                  type="email"
+                  useLabel
+                  labelText="Email"
+                  placeholder="Masukkan Email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex w-full gap-2 mb-7">
+              <div className="w-[50%] max-h-full">
+                <Dropdown
+                  placeholder={"Masukkan Role"}
+                  options={[
+                    { label: "admin", value: "admin" },
+                    { label: "user", value: "user" },
+                  ]}
+                  useLabel
+                  label="Role"
+                  height="51.2px"
+                  value={role}
+                  onChange={(val) => setRole(val!)}
+                />
+              </div>
+              <div className="w-[50%] max-h-full">
+                <Textfield
                   type="field"
                   useLabel
-                  labelText="Lokasi"
-                  placeholder="Nama Lokasi"
+                  labelText="Kontak"
+                  placeholder="Masukkan Kontak"
                   required
-                  value={"lokasi"}
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex w-full gap-2 mb-7">
+              <div className="w-[50%] max-h-full">
+                <Textfield
+                  type="password"
+                  useLabel
+                  labelText="Password"
+                  placeholder="Masukkan Password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <div className="w-[50%] max-h-full">
+                <Textfield
+                  type="password"
+                  useLabel
+                  labelText="Confirm Password"
+                  placeholder="Masukkan Confirm Password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -187,7 +273,6 @@ function DaftarUser() {
                 type="button"
                 color="red"
                 text="Batalkan"
-                isLoading={isLoading}
                 onClick={() => setShowAddPopUp(false)}
               />
               <Button
@@ -232,7 +317,12 @@ function DaftarUser() {
             <Button
               type={"button"}
               text="Add User"
-              onClick={() => setShowAddPopUp(true)}
+              onClick={() => {
+                setShowAddPopUp(true);
+                setNama("");
+                setContact("");
+                setRole(undefined);
+              }}
             />
           </div>
           <Table data={currentItems} header={column} isLoading={false} />
