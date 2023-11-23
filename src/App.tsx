@@ -1,4 +1,5 @@
 import {
+  Navigate,
   Outlet,
   Route,
   RouterProvider,
@@ -6,15 +7,18 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import Navbar from "./components/navbar";
+import Login from "./pages/login/page";
+import DaftarUser from "./pages/daftarUser/page";
+import Cookies from "js-cookie";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
 const ProtectedRoute = () => {
-  // const token = Cookies.get("access_token");
+  const token = Cookies.get("token_simentel");
 
-  // if (!token) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <>
@@ -31,13 +35,13 @@ export default function App() {
 function Root() {
   return (
     <Routes>
-      <Route path="/login" element={<Dummy title={"Login"} />} />
+      <Route path="/login" element={<Login />} />
       <Route path="*" element={<Dummy title={"Not Found"} />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Dummy title={"Home"} />} />
         <Route path="/room" element={<Dummy title={"Room"} />} />
         <Route path="/maintenance" element={<Dummy title={"Maintenance"} />} />
-        <Route path="/staff" element={<Dummy title={"Staff"} />} />
+        <Route path="/staff" element={<DaftarUser />} />
       </Route>
     </Routes>
   );

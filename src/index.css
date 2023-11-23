@@ -8,3 +8,23 @@
     @apply font-montserrat;
   }
 }
+
+/* width */
+::-webkit-scrollbar {
+  @apply h-1 w-1 lg:w-2;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  @apply z-50 rounded-[5px] bg-orange-primary;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-orange-secondary;
+}
