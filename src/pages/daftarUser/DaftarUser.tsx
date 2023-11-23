@@ -10,7 +10,7 @@ import { toastError } from "../../components/toast";
 import Action from "../../components/action";
 import Modal from "../../components/modal";
 
-function DaftarUser() {
+export function DaftarUser() {
   const column = ["No", "Nama", "Email", "Kontak", "Role", "Action"];
   const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
   const [showAddPopUp, setShowAddPopUp] = useState<boolean>(false);
@@ -122,14 +122,7 @@ function DaftarUser() {
                 />
               </div>
               <div className="w-[50%]">
-                <Textfield
-                  type="email"
-                  useLabel
-                  labelText="Email"
-                  placeholder="Masukkan Email Anda"
-                  required
-                  value={email}
-                />
+                <Dropdown />
               </div>
             </div>
             <div className="flex justify-end mt-16 gap-4">
@@ -245,5 +238,3 @@ function DaftarUser() {
     </>
   );
 }
-
-export default DaftarUser;

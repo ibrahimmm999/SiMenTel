@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/navbar";
 import Login from "./pages/login/page";
-import DaftarUser from "./pages/daftarUser/page";
+import DaftarUser from "./pages/daftarUser/DaftarUser";
 import Cookies from "js-cookie";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
