@@ -7,7 +7,7 @@ import Textfield from "../../components/textfield";
 import Button from "../../components/button";
 import EditFacility from "./component/editfacility";
 
-function EditRoom() {
+function EditRoom({idx} : {idx:number}) {
   const [file, setFile] = useState<File>();
   const [fileName, setFileName] = useState("");
 
