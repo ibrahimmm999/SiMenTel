@@ -151,6 +151,26 @@ function Textfield({
           </div>
         </div>
       )}
+      {type == "area" && (
+        <div className="w-full">
+            {useLabel} <label htmlFor="description" className={labelStyle}>{labelText}</label>
+            <div className="w-full h-fit flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus-within:border-orange-primary rounded-[10px]">
+            <textarea
+                id="description"
+                required={required}
+                placeholder={placeholder}
+                onInput={(e) => {
+                  e.currentTarget.style.height = 'auto';
+                  e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                }}
+                style={{ height: 'auto', minHeight: '100px' }}
+                value={value}
+                onChange={onChangeArea}
+                className="grow resize-none"
+            />
+            </div>
+        </div>
+      )}
     </>
   );
 }
