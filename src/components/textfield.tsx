@@ -10,7 +10,7 @@ function Textfield({
   labelText,
   labelStyle
 }: {
-  type: "field" | "password" | "search" | "email";
+  type: "field" | "password" | "search" | "email" | "area";
   placeholder: string;
   value?: string | number | readonly string[] | undefined;
   required?: boolean;
@@ -41,7 +41,7 @@ function Textfield({
         
       {type == "field" && (
         <div className="w-full">
-            ({useLabel} && <label htmlFor="field" className={labelStyle}>{labelText}</label>)
+            {useLabel} <label htmlFor="field" className={labelStyle}>{labelText}</label>
             <div className="w-full flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus-within:border-orange-primary rounded-[10px]">
             <input
                 id="field"
@@ -103,6 +103,26 @@ function Textfield({
             onChange={handleChange}
             />
           <p className={`text-red-primary hidden peer-invalid:block`}>Masukkan Email yang valid!</p>
+        </div>
+      )}
+      {type == "area" && (
+        <div className="w-full">
+            {useLabel} <label htmlFor="description" className={labelStyle}>{labelText}</label>
+            <div className="w-full h-fit flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus-within:border-orange-primary rounded-[10px]">
+            <textarea
+                id="description"
+                required={required}
+                placeholder={placeholder}
+                onInput={(e) => {
+                  e.currentTarget.style.height = 'auto';
+                  e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                }}
+                style={{ height: 'auto', minHeight: '100px' }}
+                value={inputValue}
+                onChange={() => handleChange}
+                className="grow resize-none"
+            />
+            </div>
         </div>
       )}
     </>
