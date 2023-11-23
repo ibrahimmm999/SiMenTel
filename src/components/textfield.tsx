@@ -10,7 +10,7 @@ function Textfield({
   labelText,
   labelStyle,
   onChange,
-  onChangeArea
+  onChangeArea,
 }: {
   type: "field" | "password" | "search" | "email" | "area";
   placeholder: string;
@@ -133,7 +133,12 @@ function Textfield({
           <label htmlFor="description" className={labelStyle}>
             {labelText}
           </label>
-          <div className="w-full h-fit flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus-within:border-orange-primary rounded-[10px]">
+          <div
+            className={`w-full flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus:border-orange-primary focus:outline-orange-primary rounded-[10px] ${
+              value &&
+              "invalid:border-red-primary invalid:focus:outline-red-primary peer"
+            }`}
+          >
             <textarea
               id="description"
               required={required}
@@ -146,7 +151,7 @@ function Textfield({
               style={{ height: "auto", minHeight: "100px" }}
               value={value}
               onChange={onChangeArea}
-              className="grow resize-none"
+              className="grow resize-none focus:outline-none"
             />
           </div>
         </div>
