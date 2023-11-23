@@ -1,5 +1,5 @@
-import Button from "../../../components/button";
-import Navbar from "../../../components/navbar";
+import Button from "../../components/button";
+import Navbar from "../../components/navbar";
 import Facility from "./component/facility";
 
 function DetailRoom() {
