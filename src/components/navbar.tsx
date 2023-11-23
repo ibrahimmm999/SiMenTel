@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import Logo from "/assets/logo.svg";
 import { useEventListener } from "usehooks-ts";
+import { supabase } from "../lib/api";
+import { toastError } from "./toast";
+import User from "../interfaces/user";
+import Cookies from "js-cookie";
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [active, setActive] = useState(0);
   const [navOpen, setNavOpen] = useState(false);
   const [isAccount, setAccount] = useState(false);
@@ -48,6 +53,43 @@ function Navbar() {
     }
   }, [location.pathname]);
 
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (error) {
+          throw new Error(`Error fetching user data: ${error.message}`);
+        }
+
+        if (data) {
+          setUser(data);
+        } else {
+          throw new Error("User not found");
+        }
+      } catch (error) {
+        toastError(error as string);
+      }
+    };
+
+    // Call the fetchUser function when the component mounts
+    fetchUser();
+  }, []);
+
+  const handleLogOut = async () => {
+    let { error } = await supabase.auth.signOut();
+    if (error) {
+      toastError(error.message as string);
+    }
+    Cookies.remove("token_simentel");
+    navigate("/login");
+  };
+
   return (
     <>
       <div className="fixed z-50 flex h-[80px] w-full items-center justify-between bg-white bg-opacity-50 px-3 shadow-md backdrop-blur-sm xl:px-7">
@@ -89,7 +131,7 @@ function Navbar() {
         <NavLink to="/">
           <img
             src={Logo}
-            alt="Elweha"
+            alt="Simentel"
             className="hidden h-[66px] p-2 xl:block"
           />
         </NavLink>
@@ -114,7 +156,7 @@ function Navbar() {
           <NavLink to="/">
             <img
               src={Logo}
-              alt="Elweha"
+              alt="Simentel"
               className="mx-auto mb-7 mt-5 h-[40px] xl:hidden"
             />
           </NavLink>
@@ -159,16 +201,16 @@ function Navbar() {
                   onClick={() => setAccount(!isAccount)}
                 >
                   <img
-                    src={`https://ui-avatars.com/api/?name=${"Komeng Roki"}&color=FD6701&background=FFD7BC`}
+                    src={`https://ui-avatars.com/api/?name=${user?.name}&color=FD6701&background=FFD7BC`}
                     className="account-detail hamburger h-12 w-12 shrink-0 rounded-full"
                     alt="Profile"
                   />
                   <div className="account-detail hamburger ml-3">
                     <p className="hamburger account-detail w-[160px] overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-bold text-purple-primary xl:group-hover:text-orange-primary md:w-[350px] xl:w-[180px]">
-                      {"Komeng Roki"}
+                      {user?.name}
                     </p>
                     <p className="hamburger account-detail text-[14px] text-purple-primary xl:group-hover:text-orange-primary">
-                      Admin
+                      {user?.role}
                     </p>
                   </div>
                 </div>
@@ -178,7 +220,7 @@ function Navbar() {
                   } relative w-full bg-white xl:p-3 xl:shadow-lg xl:absolute xl:translate-y-4`}
                 >
                   <div
-                    onClick={undefined}
+                    onClick={handleLogOut}
                     className="mt-4 xl:mt-0 cursor-pointer p-3 text-[16px] font-bold text-red-primary hover:text-orange-secondary"
                   >
                     Keluar

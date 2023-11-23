@@ -1,4 +1,5 @@
 import {
+  Navigate,
   Outlet,
   Route,
   RouterProvider,
@@ -8,15 +9,16 @@ import {
 import Navbar from "./components/navbar";
 import Login from "./pages/login/page";
 import DaftarUser from "./pages/daftarUser/page";
+import Cookies from "js-cookie";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
 const ProtectedRoute = () => {
-  // const token = Cookies.get("access_token");
+  const token = Cookies.get("token_simentel");
 
-  // if (!token) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <>
