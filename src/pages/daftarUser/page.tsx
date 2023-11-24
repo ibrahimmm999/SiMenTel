@@ -1,4 +1,3 @@
-import { FaFilter } from "react-icons/fa6";
 import Button from "../../components/button";
 import Paginate from "../../components/paginate";
 import Table from "../../components/table";
@@ -10,6 +9,7 @@ import { toastError, toastSuccess } from "../../components/toast";
 import Action from "../../components/action";
 import Modal from "../../components/modal";
 import Dropdown from "../../components/dropdown";
+import Filter from "../../components/filter";
 
 function DaftarUser() {
   const column = ["No", "Nama", "Email", "Kontak", "Role", "Action"];
@@ -19,7 +19,14 @@ function DaftarUser() {
 
   const [users, setUsers] = useState<User[]>([]);
   const [idEdit, setIdEdit] = useState<string>("");
+  const [filtered, setFiltered] = useState<User[]>([]);
+  const [filter, setFilter] = useState<string[]>([]);
+  const filterData = [
+    { value: "admin", label: "Admin" },
+    { value: "staff", label: "Staff" },
+  ];
 
+  const [search, setSearch] = useState<string>("");
   const [nama, setNama] = useState<string>("");
   const [contact, setContact] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -70,6 +77,8 @@ function DaftarUser() {
           };
         });
         setUsers(dataUser);
+        setFiltered(dataUser);
+        setFilter(filterData.map((val) => val.value));
       } else {
         toastError("Data User not found");
       }
@@ -80,6 +89,24 @@ function DaftarUser() {
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    setFiltered(users.filter((val: User) => filter.includes(val.role)));
+    setCurrentPage(1);
+  }, [filter]);
+
+  useEffect(() => {
+    setFiltered(
+      users.filter(
+        (val: User) =>
+          val.name.toLowerCase().includes(search.toLowerCase()) ||
+          val.email.toLowerCase().includes(search.toLowerCase()) ||
+          val.contact.toLowerCase().includes(search.toLowerCase()) ||
+          val.role.toLowerCase().includes(search.toLowerCase())
+      )
+    );
+    setCurrentPage(1);
+  }, [search]);
 
   const editUser = async () => {
     try {
@@ -113,7 +140,7 @@ function DaftarUser() {
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastItem = currentPage * 10;
   const indexOfFirstItem = indexOfLastItem - 10;
-  const currentItems = users.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <>
@@ -154,8 +181,8 @@ function DaftarUser() {
                 <Dropdown
                   placeholder={"Masukkan Role"}
                   options={[
-                    { label: "admin", value: "admin" },
-                    { label: "user", value: "user" },
+                    { label: "Admin", value: "admin" },
+                    { label: "User", value: "user" },
                   ]}
                   useLabel
                   label="Role"
@@ -311,8 +338,17 @@ function DaftarUser() {
         <div className="xl:px-[10%] w-full">
           <div className="flex justify-between xl:items-center mb-4 flex-col-reverse md:flex-row items-start gap-2 md:gap-0">
             <div className="flex gap-2">
-              <Textfield type={"search"} placeholder={"Search"} />
-              <Button type={"button"} text="Filter" icon={<FaFilter />} />
+              <Textfield
+                type={"search"}
+                placeholder={"Search"}
+                onChange={(val) => setSearch(val.target.value)}
+                value={search}
+              />
+              <Filter
+                onSelected={(val) => setFilter(val)}
+                selected={filter}
+                data={filterData}
+              />
             </div>
             <Button
               type={"button"}
