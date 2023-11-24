@@ -1,5 +1,4 @@
 import Button from "../../components/button";
-import Search from "../../components/search";
 import Table from "../../components/table";
 import Paginate from "../../components/paginate";
 import Status from "../../components/status";
@@ -10,10 +9,10 @@ import Datepicker from "../../components/datepicker";
 import Checkbox from "../../components/checkbox";
 import Dropdown from "../../components/dropdown";
 import Action from "../../components/action";
-import Textfield from "../../components/textfield";
 import { useNavigate } from "react-router-dom";
 import { FaFile } from "react-icons/fa6";
 import { toastError, toastSuccess } from "../../components/toast";
+import Textfield from "../../components/textfield";
 
 function Maintenance() {
   interface Maintenance {
@@ -93,20 +92,26 @@ function Maintenance() {
   const [roomOptions, setRoomOptions] = useState<
     { value: string; label: string }[]
   >([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
   const [maintenanceData, setMaintenanceData] = useState<Maintenance[]>([]);
   const [roomData, setRoomData] = useState<Room[]>([]);
   const [userData, setUserData] = useState<User[]>([]);
-  const [pageMaintenance, setPageMaintenance] = useState(1);
   const [tanggal, setTanggal] = useState<Date | null>();
-  const [lokasi, setLokasi] = useState("");
   const [staff, setStaff] = useState("");
   const [ruangan, setRuangan] = useState("");
   const [showAssignMaintenance, setShowAssignMaintenance] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
   const [checkboxValues, setCheckboxValues] = useState<Record<string, boolean>>(
     listDetail.reduce((acc, detail) => ({ ...acc, [detail.value]: false }), {})
   );
   const navigate = useNavigate();
+  const [checkedColumns, setCheckedColumns] = useState<Record<string, boolean>>(
+    kolomAdmin.reduce((acc, column) => ({ ...acc, [column]: true }), {})
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -187,68 +192,94 @@ function Maintenance() {
     }
   };
 
-  // const handleDeleteMaintenance = async (maintenanceId: number) => {
-  //   try {
-  //     setLoading(true);
+  const handleDeleteMaintenance = async (maintenanceId: number) => {
+    try {
+      setLoading(true);
 
-  //     const { data, error } = await supabase
-  //       .from("maintenances")
-  //       .delete()
-  //       .eq("id", maintenanceId);
+      const { data, error } = await supabase
+        .from("maintenances")
+        .delete()
+        .eq("id", maintenanceId);
 
-  //     if (error) {
-  //       console.error("Error deleting maintenance data:", error);
-  //     } else {
-  //       console.log("Maintenance data deleted successfully:", data);
-  //     }
+      if (error) {
+        console.error("Error deleting maintenance data:", error);
+      } else {
+        console.log("Maintenance data deleted successfully:", data);
+      }
 
-  //     setLoading(false);
+      setLoading(false);
 
-  //     fetchData();
-  //   } catch (error) {
-  //     console.error("Error deleting maintenance data:", error);
-  //     setLoading(false);
-  //   }
-  // };
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting maintenance data:", error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
-  }, [pageMaintenance]);
+  }, []);
+
+  // Render the headers based on checkedColumns
 
   // isi tabel admin
-  const tableDataAdmin = maintenanceData.map((item, index) => [
-    index + 1,
-    item.assign_time,
-    <Status status={item.status} />,
-    item.room?.name || "",
-    item.room?.floor || "",
-    item.detail,
-    item.user?.name,
-    item.user?.contact,
-    <Button
-      disable={item.status == "WAITING"}
-      type={"button"}
-      onClick={() => handleOnClickLaporan(item.evidence_url)}
-      icon={<FaFile />}
-    />,
-    <Action id={item.id} status={item.status} />,
-  ]);
-  // isi tabel staf
-  const tableDataStaf = maintenanceData.map((item, index) => [
-    index + 1,
-    item.assign_time,
-    <Status status={item.status} />,
-    item.room?.name || "",
-    item.room?.floor || "",
-    item.detail,
-    <Button
-      disable={item.status == "WAITING"}
-      type={"button"}
-      onClick={() => handleOnClickLaporan(item.evidence_url)}
-      icon={<FaFile />}
-    />,
-  ]);
+  const tableDataAdmin = maintenanceData.map((item, index) => {
+    const filteredColumns = kolomAdmin.filter(
+      (column) => checkedColumns[column]
+    );
 
+    return [
+      index + 1,
+      item.assign_time,
+      <Status status={item.status} />,
+      item.room?.name || "",
+      item.room?.floor || "",
+      item.detail,
+      item.user?.name,
+      item.user?.contact,
+      <Button
+        disable={item.status == "WAITING"}
+        type={"button"}
+        onClick={() => handleOnClickLaporan(item.evidence_url)}
+        icon={<FaFile />}
+      />,
+      <Action id={item.id} status={item.status} />,
+    ].filter((_, i) => filteredColumns.includes(kolomAdmin[i]));
+  });
+
+  // isi tabel staf
+  const tableDataStaf = maintenanceData.map((item, index) => {
+    const filteredColumns = kolomStaff.filter(
+      (column) => checkedColumns[column]
+    );
+
+    return [
+      index + 1,
+      item.assign_time,
+      <Status status={item.status} />,
+      item.room?.name || "",
+      item.room?.floor || "",
+      item.detail,
+      <Button
+        disable={item.status == "WAITING"}
+        type={"button"}
+        onClick={() => handleOnClickLaporan(item.evidence_url)}
+        icon={<FaFile />}
+      />,
+    ].filter((_, i) => filteredColumns.includes(kolomStaff[i]));
+  });
+  const filteredData = (
+    role === "admin" ? tableDataAdmin : tableDataStaf
+  ).filter((item) => {
+    const values = Object.values(item).join(" ").toLowerCase();
+    return values.includes(searchTerm.toLowerCase());
+  });
+  const handleColumnCheckboxChange = (column: string) => {
+    setCheckedColumns((prevCheckedColumns) => ({
+      ...prevCheckedColumns,
+      [column]: !prevCheckedColumns[column],
+    }));
+  };
   const handleCheckboxChange = (id: string) => {
     setCheckboxValues((prevValues) => ({
       ...prevValues,
@@ -257,15 +288,13 @@ function Maintenance() {
   };
 
   const handleOnClickLaporan = (url: string) => {
-    navigate(url);
+    window.location.replace(url);
   };
 
   // paginate
   const indexOfLastItem = currentPage * 10;
   const indexOfFirstItem = indexOfLastItem - 10;
-  const currentItems = (
-    role === "admin" ? tableDataAdmin : tableDataStaf
-  ).slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <>
@@ -348,6 +377,7 @@ function Maintenance() {
           </div>
         }
       ></Modal>
+
       <div className=" pt-[136px] px-[100px] font-montserrat">
         <h1 className="text-center text-[#4D4C7D] font-bold text-[64px]">
           MAINTENANCE
@@ -356,9 +386,37 @@ function Maintenance() {
           Jumlah Maintenance: {maintenanceData.length}
         </h2>
         <div className="flex flex-1 justify-between mt-[75px] mb-4">
-          <div className="flex relative">
-            <Search style="mr-[24px]" placeholder="Cari Jadwal Maintenance" />
-            <Button type="button" text="Filter" />
+          <div className="flex gap-3 items-center">
+            <Textfield
+              type={"search"}
+              placeholder={"Search"}
+              onChange={handleSearchChange}
+              value={searchTerm}
+            />
+            <div className="relative">
+              <Button
+                type="button"
+                text="Filter"
+                onClick={() => setShowFilter(!showFilter)}
+              />
+              {showFilter && (
+                <ul className="absolute z-10 max-h-[600%] w-[250%] overflow-auto rounded-lg bg-white bg-opacity-50 px-4 shadow-card backdrop-blur-md">
+                  {(role == "admin" ? kolomAdmin : kolomStaff).map((item) => (
+                    <li className="my-4 flex cursor-pointer items-center gap-2 hover:text-kOrange-300">
+                      <div>
+                        <Checkbox
+                          key={item}
+                          label={item}
+                          id={item}
+                          checked={checkedColumns[item]}
+                          onChange={() => handleColumnCheckboxChange(item)}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           <Button
             type="button"
@@ -368,7 +426,9 @@ function Maintenance() {
         </div>
         <Table
           data={currentItems}
-          header={role === "admin" ? kolomAdmin : kolomStaff}
+          header={(role == "admin" ? kolomAdmin : kolomStaff).filter(
+            (column) => checkedColumns[column]
+          )}
           isLoading={false}
         />
         <div className="flex w-full justify-center">
