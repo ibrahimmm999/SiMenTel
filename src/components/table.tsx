@@ -26,7 +26,10 @@ function Table({
   };
   return (
     <>
-      <div className="flex overflow-auto">
+      <div 
+      className="flex overflow-auto"
+      style={{ boxShadow: "0px 4px 50px 0px rgba(32, 0, 149, 0.10)" }}
+      >
         <table className="min-w-full overflow-visible">
           <thead>
             <tr>
