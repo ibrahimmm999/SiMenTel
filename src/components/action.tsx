@@ -3,14 +3,34 @@ import { BiSolidPencil } from "react-icons/bi";
 import { FaTrashCan } from "react-icons/fa6";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 
-function Action({ id, status }: { id: number; status: string }) {
+function Action({
+  id,
+  status,
+  onChangeEdit,
+  onChangeDelete,
+}: {
+  id: string;
+  status: string;
+  onChangeEdit?: (x: string) => void;
+  onChangeDelete?: (x: string) => void;
+}) {
   console.log(id);
   return (
     <>
       {status == "WAITING" ? (
         <div className="w-full flex justify-center gap-2">
-          <Button type={"button"} icon={<BiSolidPencil />} color="primary" />
-          <Button type={"button"} icon={<FaTrashCan />} color="red" />
+          <Button
+            type={"button"}
+            icon={<BiSolidPencil />}
+            color="primary"
+            onClick={() => onChangeEdit!(id)}
+          />
+          <Button
+            type={"button"}
+            icon={<FaTrashCan />}
+            color="red"
+            onClick={() => onChangeDelete!(id)}
+          />
         </div>
       ) : status == "REVIEW" ? (
         <div className="w-full flex justify-center gap-2">

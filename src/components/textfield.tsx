@@ -71,6 +71,7 @@ function Textfield({
               required={required}
               placeholder={placeholder}
               onChange={onChange}
+              value={value}
               className="grow focus:outline-none w-full"
             />
             <div
@@ -99,6 +100,7 @@ function Textfield({
               required={required}
               placeholder={placeholder}
               onChange={onChange}
+              value={value}
               className="grow focus:outline-none w-full"
             />
           </div>
@@ -121,6 +123,7 @@ function Textfield({
               "invalid:border-red-primary invalid:focus:outline-red-primary peer"
             }`}
             onChange={onChange}
+            value={value}
           />
           <p className={`text-red-primary hidden peer-invalid:block`}>
             Masukkan Email yang valid!

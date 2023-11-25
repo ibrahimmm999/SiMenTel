@@ -28,13 +28,8 @@ function Login() {
     }
 
     if (error) {
-      // setHelperText({ error: true, text: error.message });
       toastError(error.message);
     } else if (!data && !error) {
-      // setHelperText({
-      //   error: false,
-      //   text: "An email has been sent to you for verification!",
-      // });
       toastError("An email has been sent to you for verification!");
     }
   };
@@ -60,12 +55,14 @@ function Login() {
         </div>
         <Textfield
           required
-          type={"field"}
+          value={email}
+          type={"email"}
           placeholder={"Your email"}
           onChange={(val) => setEmail(val.target.value)}
         />
         <Textfield
           required
+          value={password}
           type={"password"}
           placeholder={"Your password"}
           onChange={(val) => setPassword(val.target.value)}
