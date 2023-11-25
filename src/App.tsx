@@ -8,8 +8,8 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/navbar";
 import Login from "./pages/login/page";
-import DaftarUser from "./pages/daftarUser/page";
 import Cookies from "js-cookie";
+import DaftarUser from "./pages/daftarUser/page";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 

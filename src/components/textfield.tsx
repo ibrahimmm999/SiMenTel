@@ -10,8 +10,9 @@ function Textfield({
   labelText,
   labelStyle,
   onChange,
+  onChangeArea,
 }: {
-  type: "field" | "password" | "search" | "email";
+  type: "field" | "password" | "search" | "email" | "area";
   placeholder: string;
   value?: string | number | readonly string[] | undefined;
   required?: boolean;
@@ -19,6 +20,7 @@ function Textfield({
   labelText?: string;
   labelStyle?: string;
   onChange?: React.ChangeEventHandler<HTMLInputElement> | undefined;
+  onChangeArea?: React.ChangeEventHandler<HTMLTextAreaElement> | undefined;
 }) {
   //password attribute
   const [showPassword, setShowPassword] = useState("password");
@@ -69,6 +71,7 @@ function Textfield({
               required={required}
               placeholder={placeholder}
               onChange={onChange}
+              value={value}
               className="grow focus:outline-none w-full"
             />
             <div
@@ -97,6 +100,7 @@ function Textfield({
               required={required}
               placeholder={placeholder}
               onChange={onChange}
+              value={value}
               className="grow focus:outline-none w-full"
             />
           </div>
@@ -119,10 +123,40 @@ function Textfield({
               "invalid:border-red-primary invalid:focus:outline-red-primary peer"
             }`}
             onChange={onChange}
+            value={value}
           />
           <p className={`text-red-primary hidden peer-invalid:block`}>
             Masukkan Email yang valid!
           </p>
+        </div>
+      )}
+      {type == "area" && (
+        <div className="w-full">
+          {useLabel}{" "}
+          <label htmlFor="description" className={labelStyle}>
+            {labelText}
+          </label>
+          <div
+            className={`w-full flex items-center px-[10px] py-[12px] text-[16px] text-black bg-white border-2 border-mono-grey hover:border-orange-primary focus:border-orange-primary focus:outline-orange-primary rounded-[10px] ${
+              value &&
+              "invalid:border-red-primary invalid:focus:outline-red-primary peer"
+            }`}
+          >
+            <textarea
+              id="description"
+              required={required}
+              placeholder={placeholder}
+              onInput={(e) => {
+                e.currentTarget.style.height = "auto";
+                e.currentTarget.style.height =
+                  e.currentTarget.scrollHeight + "px";
+              }}
+              style={{ height: "auto", minHeight: "100px" }}
+              value={value}
+              onChange={onChangeArea}
+              className="grow resize-none focus:outline-none"
+            />
+          </div>
         </div>
       )}
     </>
