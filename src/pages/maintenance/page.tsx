@@ -3,7 +3,7 @@ import Table from "../../components/table";
 import Paginate from "../../components/paginate";
 import Status from "../../components/status";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../lib/api";
 import Modal from "../../components/modal";
 import Datepicker from "../../components/datepicker";
 import Checkbox from "../../components/checkbox";
@@ -13,38 +13,11 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { FaFile } from "react-icons/fa6";
 import { toastError, toastSuccess } from "../../components/toast";
 import Textfield from "../../components/textfield";
+import Room from "../../interfaces/room";
+import User from "../../interfaces/user";
+import Maintenance from "../../interfaces/maintenance";
 
-function Maintenance() {
-  interface Maintenance {
-    id: number;
-    description: string;
-    room_id: number;
-    user_id: number;
-    assign_time: string;
-    work_time: string;
-    status: string;
-    evidence_url: string;
-    room?: Room;
-    detail: string;
-    user?: User;
-    [key: string]: any;
-  }
-
-  interface Room {
-    id: number;
-    name: string;
-    floor: string;
-    description: string;
-    price: number;
-  }
-
-  interface User {
-    id: string;
-    name: string;
-    contact: string;
-    role: string;
-  }
-
+function MaintenancePage() {
   const kolomAdmin = [
     "ID",
     "Tanggal",
@@ -74,11 +47,8 @@ function Maintenance() {
     { label: "Lemari", value: "Lemari" },
   ];
 
-  const supabase = createClient(
-    "https://iyxelirhnqarhzqluhmw.supabase.co/",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5eGVsaXJobnFhcmh6cWx1aG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDA2NjUwNjcsImV4cCI6MjAxNjI0MTA2N30.htNhQMeg7ZyRygze0_1bRKUtsjoy0BKCXjpuCgmxUQw"
-  );
-  const role: string = "admin"; // DUMMY DATA ROLE
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   // Loading
   const [loading, setLoading] = useState(false);
@@ -92,16 +62,9 @@ function Maintenance() {
   const [roomOptions, setRoomOptions] = useState<
     { value: string; label: string }[]
   >([]);
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
-  const [maintenanceData, setMaintenanceData] = useState<Maintenance[]>([]);
-  const [editMaintenanceData, setEditMaintenanceData] =
-    useState<Maintenance | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [roomData, setRoomData] = useState<Room[]>([]);
   const [userData, setUserData] = useState<User[]>([]);
   const [tanggal, setTanggal] = useState<Date | null>();
@@ -109,6 +72,11 @@ function Maintenance() {
   const [ruangan, setRuangan] = useState("");
   const [showAssignMaintenance, setShowAssignMaintenance] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
+  const [maintenanceData, setMaintenanceData] = useState<Maintenance[]>([]);
+
+  const [editMaintenanceData, setEditMaintenanceData] =
+    useState<Maintenance | null>(null);
   const [checkboxValues, setCheckboxValues] = useState<Record<string, boolean>>(
     listDetail.reduce((acc, detail) => ({ ...acc, [detail.value]: false }), {})
   );
@@ -116,7 +84,31 @@ function Maintenance() {
     kolomAdmin.reduce((acc, column) => ({ ...acc, [column]: true }), {})
   );
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        if (error) {
+          console.error("Error fetching user data:", error);
+          return;
+        }
+        setCurrentUser(data);
+        setRole(data?.role || null);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -180,7 +172,6 @@ function Maintenance() {
 
       if (error) {
         toastError("Error adding maintenance data");
-        console.error("Error adding maintenance data:", error);
       } else {
         toastSuccess("Data added successfully");
         console.log(data);
@@ -198,7 +189,6 @@ function Maintenance() {
   const handleAcceptMaintenance = async (maintenanceId: number) => {
     try {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("maintenances")
         .update({
@@ -211,7 +201,6 @@ function Maintenance() {
       } else {
         console.log("Maintenance accepted successfully:", data);
       }
-
       setLoading(false);
       fetchData();
     } catch (error) {
@@ -219,26 +208,22 @@ function Maintenance() {
       setLoading(false);
     }
   };
+
   const handleRejecttMaintenance = async (
     maintenanceId: number,
     evidenceUrl: string
   ) => {
     try {
       setLoading(true);
-
-      // Hapus file dari penyimpanan Supabase
-      const fileName = evidenceUrl.split("/").pop(); // Mendapatkan nama file dari URL
+      const fileName = evidenceUrl.split("/").pop();
       const { data: dataFile, error: errorDelete } = await supabase.storage
         .from("evidence")
         .remove([`public/${fileName}`]);
-
       if (errorDelete) {
         console.error("Error deleting file from storage:", errorDelete);
       } else {
         console.log("File deleted successfully:", dataFile);
       }
-
-      // Setelah menghapus file, update status maintenance
       const { data, error } = await supabase
         .from("maintenances")
         .update({
@@ -246,13 +231,11 @@ function Maintenance() {
           evidence_url: null,
         })
         .eq("id", maintenanceId);
-
       if (error) {
         console.error("Error rejecting maintenance:", error);
       } else {
         console.log("Maintenance rejected successfully:", data);
       }
-
       setLoading(false);
       fetchData();
     } catch (error) {
@@ -264,20 +247,16 @@ function Maintenance() {
   const handleDeleteMaintenance = async (maintenanceId: number) => {
     try {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("maintenances")
         .delete()
         .eq("id", maintenanceId);
-
       if (error) {
         console.error("Error deleting maintenance data:", error);
       } else {
         console.log("Maintenance data deleted successfully:", data);
       }
-
       setLoading(false);
-
       fetchData();
     } catch (error) {
       console.error("Error deleting maintenance data:", error);
@@ -287,53 +266,42 @@ function Maintenance() {
 
   const handleFileUpload = async (maintenanceId: number) => {
     try {
-      // Open file explorer and get the selected file
       const input = document.createElement("input");
       input.type = "file";
-      input.accept = ".pdf"; // Add any specific file formats you want to accept
+      input.accept = ".pdf";
       input.click();
-
       input.addEventListener("change", async (e) => {
         const selectedFile = (e.target as HTMLInputElement).files?.[0];
-
         if (selectedFile) {
           toastSuccess(selectedFile?.name);
           setLoading(true);
-
           const { data: fileData, error: fileError } = await supabase.storage
             .from("evidence")
             .upload(`public/${selectedFile.name}`, selectedFile, {
               cacheControl: "3600",
               upsert: false,
             });
-
           if (fileError) {
             console.error("Error uploading file:", fileError);
             toastError("Error uploading file");
           } else {
             console.log("File uploaded successfully:", fileData);
             toastSuccess("File uploaded successfully");
-
             const { data } = supabase.storage
               .from("evidence")
               .getPublicUrl(`public/${selectedFile.name}`);
-
             const { data: updateData, error: updateError } = await supabase
               .from("maintenances")
               .update({ evidence_url: data.publicUrl, status: "REVIEW" })
               .eq("id", maintenanceId);
-
             if (updateError) {
               console.error("Error updating maintenance data:", updateError);
               toastError("Error updating maintenance data");
             } else {
               console.log("Maintenance data updated successfully:", updateData);
-
-              // Fetch updated data
               fetchData();
             }
           }
-
           setLoading(false);
         }
       });
@@ -347,14 +315,11 @@ function Maintenance() {
     fetchData();
   }, []);
 
-  // Render the headers based on checkedColumns
-
   // isi tabel admin
   const tableDataAdmin = maintenanceData.map((item, index) => {
     const filteredColumns = kolomAdmin.filter(
       (column) => checkedColumns[column]
     );
-
     return [
       index + 1,
       item.assign_time,
@@ -386,26 +351,28 @@ function Maintenance() {
   });
 
   // isi tabel staf
-  const tableDataStaf = maintenanceData.map((item, index) => {
-    const filteredColumns = kolomStaff.filter(
-      (column) => checkedColumns[column]
-    );
+  const tableDataStaf = maintenanceData
+    .filter((item) => item.user?.name === currentUser?.name)
+    .map((item, index) => {
+      const filteredColumns = kolomStaff.filter(
+        (column) => checkedColumns[column]
+      );
+      return [
+        index + 1,
+        item.assign_time,
+        <Status status={item.status} />,
+        item.room?.name || "",
+        item.room?.floor || "",
+        item.detail,
+        <Button
+          disable={item.status === "FIXED"}
+          type="button"
+          onClick={() => handleFileUpload(item.id)}
+          icon={<MdOutlineFileUpload />}
+        />,
+      ].filter((_, i) => filteredColumns.includes(kolomStaff[i]));
+    });
 
-    return [
-      index + 1,
-      item.assign_time,
-      <Status status={item.status} />,
-      item.room?.name || "",
-      item.room?.floor || "",
-      item.detail,
-      <Button
-        disable={item.status === "FIXED"}
-        type="button"
-        onClick={() => handleFileUpload(item.id)}
-        icon={<MdOutlineFileUpload />}
-      />,
-    ].filter((_, i) => filteredColumns.includes(kolomStaff[i]));
-  });
   const filteredData = (
     role === "admin" ? tableDataAdmin : tableDataStaf
   ).filter((item) => {
@@ -434,13 +401,10 @@ function Maintenance() {
       (maintenance) => maintenance.id === maintenanceId
     );
     if (maintenanceToEdit) {
-      // Extract values from maintenanceToEdit and set state variables
       const { assign_time, user, room, detail } = maintenanceToEdit;
       setTanggal(assign_time ? new Date(assign_time) : null);
       setStaff(user?.name || "");
       setRuangan(room?.name || "");
-
-      // Create an object to represent the checkbox values
       const newCheckboxValues: Record<string, boolean> = {};
       listDetail.forEach((detailOption) => {
         newCheckboxValues[detailOption.value] = detail.includes(
@@ -448,7 +412,6 @@ function Maintenance() {
         );
       });
       setCheckboxValues(newCheckboxValues);
-
       setEditMaintenanceData(maintenanceToEdit);
       setShowEditPopUp(true);
     } else {
@@ -459,14 +422,12 @@ function Maintenance() {
   const handleSaveEditMaintenance = async () => {
     try {
       setLoading(true);
-
       if (editMaintenanceData) {
         const existingMaintenance = await supabase
           .from("maintenances")
           .select("*")
           .eq("id", editMaintenanceData.id)
           .single();
-
         if (existingMaintenance.data) {
           const updatedMaintenance = {
             assign_time: tanggal?.toISOString() || "",
@@ -485,7 +446,6 @@ function Maintenance() {
             .from("maintenances")
             .update(updatedMaintenance)
             .eq("id", editMaintenanceData.id);
-
           if (updateError) {
             toastError("Error updating maintenance data");
             console.error("Error updating maintenance data:", updateError);
@@ -578,7 +538,6 @@ function Maintenance() {
                 </div>
               </div>
             </div>
-
             <div className="flex justify-end mt-16 gap-4">
               <Button
                 type="button"
@@ -660,7 +619,6 @@ function Maintenance() {
                 </div>
               </div>
             </div>
-
             <div className="flex justify-end mt-16 gap-4">
               <Button
                 type="button"
@@ -680,13 +638,17 @@ function Maintenance() {
           </div>
         }
       ></Modal>
-
       <div className=" pt-[136px] px-[100px] font-montserrat">
         <h1 className="text-center text-[#4D4C7D] font-bold text-[64px]">
           MAINTENANCE
         </h1>
         <h2 className="text-center text-[#ED7D31] font-bold text-[36px]">
-          Jumlah Maintenance: {maintenanceData.length}
+          Jumlah Maintenance:{" "}
+          {role === "admin"
+            ? maintenanceData.length
+            : maintenanceData.filter(
+                (item) => item.user?.name === currentUser?.name
+              ).length}
         </h2>
         <div className="flex flex-1 justify-between mt-[75px] mb-4">
           <div className="flex gap-3 items-center">
@@ -747,4 +709,4 @@ function Maintenance() {
   );
 }
 
-export default Maintenance;
+export default MaintenancePage;
