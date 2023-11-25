@@ -77,7 +77,6 @@ function Navbar() {
       }
     };
 
-    // Call the fetchUser function when the component mounts
     fetchUser();
   }, []);
 
@@ -185,14 +184,16 @@ function Navbar() {
             >
               Maintenance
             </NavLink>
-            <NavLink
-              to="/staff"
-              className={`${
-                active == 3 ? "text-orange-primary" : "text-purple-primary"
-              } rounded-[10px] p-3 text-[16px] font-bold hover:bg-orange-primary hover:text-white `}
-            >
-              Staff
-            </NavLink>
+            {user?.role == "admin" && (
+              <NavLink
+                to="/staff"
+                className={`${
+                  active == 3 ? "text-orange-primary" : "text-purple-primary"
+                } rounded-[10px] p-3 text-[16px] font-bold hover:bg-orange-primary hover:text-white `}
+              >
+                Staff
+              </NavLink>
+            )}
             <div className="hidden h-12 w-[1px] bg-mono-light_grey xl:block"></div>
             <div className="account-detail group p-3 mt-[60%] xl:mt-0">
               <>

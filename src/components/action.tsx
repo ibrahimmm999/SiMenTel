@@ -6,11 +6,13 @@ import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 function Action({
   id,
   status,
-  onChange,
+  onChangeEdit,
+  onChangeDelete,
 }: {
   id: string;
   status: string;
-  onChange: (x: string) => void;
+  onChangeEdit?: (x: string) => void;
+  onChangeDelete?: (x: string) => void;
 }) {
   console.log(id);
   return (
@@ -21,29 +23,19 @@ function Action({
             type={"button"}
             icon={<BiSolidPencil />}
             color="primary"
-            onClick={() => onChange(id)}
+            onClick={() => onChangeEdit!(id)}
           />
           <Button
             type={"button"}
             icon={<FaTrashCan />}
             color="red"
-            onClick={() => onChange(id)}
+            onClick={() => onChangeDelete!(id)}
           />
         </div>
       ) : status == "REVIEW" ? (
         <div className="w-full flex justify-center gap-2">
-          <Button
-            type={"button"}
-            icon={<AiOutlineCheck />}
-            color="green"
-            onClick={() => onChange(id)}
-          />
-          <Button
-            type={"button"}
-            icon={<AiOutlineClose />}
-            color="red"
-            onClick={() => onChange(id)}
-          />
+          <Button type={"button"} icon={<AiOutlineCheck />} color="green" />
+          <Button type={"button"} icon={<AiOutlineClose />} color="red" />
         </div>
       ) : status == "FIXED" ? (
         <div className="w-full flex justify-center text-green-primary text-xl">

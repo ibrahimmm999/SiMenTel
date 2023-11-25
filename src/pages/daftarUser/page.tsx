@@ -10,15 +10,50 @@ import Action from "../../components/action";
 import Modal from "../../components/modal";
 import Dropdown from "../../components/dropdown";
 import Filter from "../../components/filter";
+import { useNavigate } from "react-router-dom";
 
 function DaftarUser() {
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (error) {
+          throw new Error(`Error fetching user data: ${error.message}`);
+        }
+
+        if (data) {
+          setUser(data);
+        } else {
+          throw new Error("User not found");
+        }
+      } catch (error) {
+        toastError(error as string);
+      }
+    };
+
+    fetchUser();
+  }, []);
+  if (user?.role != "admin") {
+    const navigator = useNavigate();
+    navigator("/");
+    toastError("Anda tidak punya izin");
+    return;
+  }
+
   const column = ["No", "Nama", "Email", "Kontak", "Role", "Action"];
   const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
   const [showAddPopUp, setShowAddPopUp] = useState<boolean>(false);
+  const [showDeletePopUp, setShowDeletePopUp] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [users, setUsers] = useState<User[]>([]);
-  const [idEdit, setIdEdit] = useState<string>("");
+  const [idSelected, setIdSelected] = useState<string>("");
   const [filtered, setFiltered] = useState<User[]>([]);
   const [filter, setFilter] = useState<string[]>([]);
   const filterData = [
@@ -27,6 +62,7 @@ function DaftarUser() {
   ];
 
   const [search, setSearch] = useState<string>("");
+  const [confirm, setConfirm] = useState<string>("");
   const [nama, setNama] = useState<string>("");
   const [contact, setContact] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -60,8 +96,8 @@ function DaftarUser() {
               <Action
                 id={e.id}
                 status={"WAITING"}
-                onChange={(id) => {
-                  setIdEdit(id);
+                onChangeEdit={(id) => {
+                  setIdSelected(id);
                   setNama(data.filter((val: User) => val.id == id)[0].name);
                   setContact(
                     data.filter((val: User) => val.id == id)[0].contact
@@ -71,6 +107,12 @@ function DaftarUser() {
                     value: data.filter((val: User) => val.id == id)[0].role,
                   });
                   setShowEditPopUp(true);
+                }}
+                onChangeDelete={(id) => {
+                  setConfirm("");
+                  setIdSelected(id);
+                  setNama(data.filter((val: User) => val.id == id)[0].name);
+                  setShowDeletePopUp(true);
                 }}
               />
             ),
@@ -118,7 +160,7 @@ function DaftarUser() {
       const { data, error } = await supabase
         .from("users")
         .update({ name: nama, contact: contact, role: role?.value })
-        .eq("id", idEdit)
+        .eq("id", idSelected)
         .select();
       if (data && data.length > 0) {
         fetchUser();
@@ -135,7 +177,90 @@ function DaftarUser() {
     }
   };
 
-  const tambahUser = async () => {};
+  const tambahUser = async () => {
+    try {
+      if ((await supabase.auth.getUser()).data.user == null) {
+        throw "Not Authenticated";
+      }
+
+      if (password != confirmPassword) {
+        throw "Password not match";
+      }
+
+      setIsLoading(true);
+      const { data, error: err } = await supabase.auth.admin.createUser({
+        email: email,
+        password: password,
+        email_confirm: true,
+      });
+
+      if (err) {
+        throw err.message;
+      }
+
+      const { error } = await supabase.from("users").insert({
+        id: data.user.id,
+        email: email,
+        role: role?.value,
+        contact: contact,
+        name: nama,
+      });
+
+      if (error) {
+        throw error.message;
+      }
+
+      if (data && data.user != null) {
+        fetchUser();
+        toastSuccess("Create User Successfully");
+        setShowAddPopUp(false);
+      }
+    } catch (error) {
+      toastError(error as string);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const hapusUser = async () => {
+    try {
+      if ((await supabase.auth.getUser()).data.user == null) {
+        throw "Not Authenticated";
+      }
+
+      if (confirm != nama) {
+        throw "Confirm type not match";
+      }
+
+      setIsLoading(true);
+      const { data, error: err } = await supabase.auth.admin.deleteUser(
+        idSelected
+      );
+
+      if (err) {
+        throw err.message;
+      }
+
+      const { error } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", idSelected);
+
+      if (error) {
+        throw error.message;
+      }
+
+      if (data && data.user != null) {
+        fetchUser();
+        toastSuccess("Delete User Successfully");
+        setShowDeletePopUp(false);
+      }
+    } catch (error) {
+      toastError(error as string);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastItem = currentPage * 10;
@@ -144,6 +269,48 @@ function DaftarUser() {
 
   return (
     <>
+      <Modal
+        visible={showDeletePopUp}
+        onClose={() => setShowDeletePopUp(false)}
+        children={
+          <div>
+            <h1 className=" text-[40px] text-[#4D4C7D] font-bold mb-5">
+              Delete User
+            </h1>
+            <h1 className=" text-[16px] text-[#4D4C7D] mb-5 flex">
+              Type <p className="font-bold mx-2"> {`"` + nama + `"`} </p> to
+              delete the user
+            </h1>
+            <div className="flex w-full gap-2 mb-7 justify-center">
+              <Textfield
+                type="field"
+                useLabel
+                labelText="Confirm"
+                placeholder="Masukkan Confirm Type"
+                required
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end mt-16 gap-4">
+              <Button
+                type="button"
+                color="primary"
+                text="Batalkan"
+                onClick={() => setShowDeletePopUp(false)}
+              />
+              <Button
+                isLoading={isLoading}
+                type="submit"
+                color="red"
+                text="Hapus"
+                onClick={hapusUser}
+              />
+            </div>
+          </div>
+        }
+      ></Modal>
+
       <Modal
         visible={showEditPopUp}
         onClose={() => setShowEditPopUp(false)}
@@ -182,7 +349,7 @@ function DaftarUser() {
                   placeholder={"Masukkan Role"}
                   options={[
                     { label: "Admin", value: "admin" },
-                    { label: "User", value: "user" },
+                    { label: "Staff", value: "staff" },
                   ]}
                   useLabel
                   label="Role"
@@ -249,8 +416,8 @@ function DaftarUser() {
                 <Dropdown
                   placeholder={"Masukkan Role"}
                   options={[
-                    { label: "admin", value: "admin" },
-                    { label: "user", value: "user" },
+                    { label: "Admin", value: "admin" },
+                    { label: "Staff", value: "staff" },
                   ]}
                   useLabel
                   label="Role"
@@ -318,7 +485,7 @@ function DaftarUser() {
         <h1 className="text-[24px] md:text-[36px] xl:text-[64px] font-bold text-purple-primary text-center">
           DAFTAR USER
           <h2 className="text-[16px] md:text-[24px] xl:text-[36px] text-orange-primary">
-            Jumlah Staff : {users.length}
+            Jumlah Akun : {users.length}
           </h2>
         </h1>
         <div className="w-full md:w-[80%] xl:w-[50%] p-4 bg-white shadow-lg rounded-xl flex gap-4 flex-col md:flex-row">
