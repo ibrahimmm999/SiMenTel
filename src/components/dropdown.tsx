@@ -14,7 +14,7 @@ interface DropdownProps {
         }>
       ) => void)
     | undefined;
-  value?: { value: string; label: string };
+  value?: { value: any; label: string };
   options: any;
   required?: boolean;
 }

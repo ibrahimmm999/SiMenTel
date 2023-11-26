@@ -11,11 +11,13 @@ import { supabase } from "../../lib/api";
 import { toastError, toastSuccess } from "../../components/toast";
 import Facility from "../../interfaces/facility";
 import Dropdown from "../../components/dropdown";
+import { HiOutlinePhotograph } from "react-icons/hi";
+import User from "../../interfaces/user";
 
 function EditRoom({ idx }: { idx: number }) {
   const [file, setFile] = useState<File>();
-  const [fileName, setFileName] = useState("");
-  const [data, setData] = useState<Room | null>(null);
+  const [fileDataURL, setFileDataURL] = useState<string>("");
+  const [roomData, setRoomData] = useState<Room | null>(null);
   const [facility, setFacility] = useState<Facility[]>([]);
   const [newFacility, setNewFacility] = useState<Facility | null>(null);
   const option = [
@@ -23,6 +25,29 @@ function EditRoom({ idx }: { idx: number }) {
     { label: "Broken", value: false },
   ];
   const [trigger, setTrigger] = useState<number>(0);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  const fetchUserData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      if (error) {
+        console.error("Error fetching user data:", error);
+        return;
+      }
+      setCurrentUser(data);
+      console.log(currentUser);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  const splitString = (url: string) => {
+    return url.split("/")[9];
+  };
 
   const handleFileRejected = (fileRejections: FileRejection[]) => {
     const rejectedFiles = fileRejections.map(
@@ -41,20 +66,48 @@ function EditRoom({ idx }: { idx: number }) {
   const handleOnUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
-        .from("rooms")
-        .update({
-          name: data && data.name,
-          floor: data && data.floor,
-          description: data && data.description,
-          price: data && data.price,
-        })
-        .eq("id", idx);
+      if (file) {
+        const {} = await supabase.storage
+          .from("photo_room")
+          .upload(`public/${file.name}`, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+        const { data } = supabase.storage
+          .from("photo_room")
+          .getPublicUrl(`public/${file.name}`);
+        const { error } = await supabase
+          .from("rooms")
+          .update({
+            name: roomData && roomData.name,
+            floor: roomData && roomData.floor,
+            description: roomData && roomData.description,
+            price: roomData && roomData.price,
+            photo_url: data.publicUrl,
+          })
+          .eq("id", idx);
 
-      if (error) {
-        throw new Error(`Error update room data: ${error.message}`);
+        if (error) {
+          throw new Error(`Error update room data: ${error.message}`);
+        } else {
+          toastSuccess("Update Success");
+        }
       } else {
-        toastSuccess("Update Success");
+        const { error } = await supabase
+          .from("rooms")
+          .update({
+            name: roomData && roomData.name,
+            floor: roomData && roomData.floor,
+            description: roomData && roomData.description,
+            price: roomData && roomData.price,
+          })
+          .eq("id", idx);
+
+        if (error) {
+          throw new Error(`Error update room data: ${error.message}`);
+        } else {
+          toastSuccess("Update Success");
+        }
       }
     } catch (error) {
       toastError(error as string);
@@ -93,7 +146,8 @@ function EditRoom({ idx }: { idx: number }) {
         }
 
         if (data) {
-          setData(data);
+          setRoomData(data);
+          setFileDataURL(data.photo_url);
         } else {
           throw new Error("Room not found");
         }
@@ -105,45 +159,103 @@ function EditRoom({ idx }: { idx: number }) {
     fetchRoom();
   }, []);
 
-  useEffect(() => {
-    const fetchFacility = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("facilities")
-          .select()
-          .eq("room_id", idx);
+  const fetchFacility = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("facilities")
+        .select()
+        .eq("room_id", idx);
 
-        if (error) {
-          throw new Error(`Error fetching facility data: ${error.message}`);
-        }
-
-        if (data) {
-          setFacility(data);
-        } else {
-          throw new Error("Facilities not found");
-        }
-      } catch (error) {
-        toastError(error as string);
+      if (error) {
+        throw new Error(`Error fetching facility data: ${error.message}`);
       }
-    };
 
+      if (data) {
+        setFacility(data);
+      } else {
+        throw new Error("Facilities not found");
+      }
+    } catch (error) {
+      toastError(error as string);
+    }
+  };
+
+  useEffect(() => {
     fetchFacility();
   }, [trigger]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    let isCancel = false;
+    if (file) {
+      let fileReader = new FileReader();
+      fileReader.onload = (e: any) => {
+        const { result } = e.target;
+        if (result && !isCancel) {
+          setFileDataURL(result);
+        }
+      };
+      fileReader.readAsDataURL(file);
+    }
+  }, [file]);
 
   return (
     <div className="w-full flex flex-col pb-10">
       <Navbar />
       <div className="w-full mt-[120px] flex px-28 gap-24">
-        <Upload
-          onFileSelected={(e: File) => {
-            setFile(e);
-            setFileName(e.name);
-          }}
-          onFileRejected={handleFileRejected}
-          onFileDeleted={() => setFile(undefined)}
-          name={fileName}
-        />
-        {data && (
+        {file ? (
+          <div className="flex flex-col gap-4">
+            <img
+              src={fileDataURL}
+              alt=""
+              className="w-[560px] h-[36x0px] cover rounded-lg"
+            />
+            <div
+              className={`flex items-center gap-3 text-orange-primary ${
+                file.name ? "block" : "hidden"
+              }`}
+            >
+              <HiOutlinePhotograph size={42} />
+              <p className="text-[20px] text-[#4D4C7D] font-normal">
+                {file.name}
+              </p>
+              <Upload
+                onFileSelected={(e: File) => {
+                  setFile(e);
+                }}
+                onFileRejected={handleFileRejected}
+                onFileDeleted={() => setFile(undefined)}
+                tipe={"2"}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <img
+              src={fileDataURL}
+              alt=""
+              className="w-[560px] h-[36x0px] cover rounded-lg"
+            />
+            <div className={`flex items-center gap-3 text-orange-primary`}>
+              <HiOutlinePhotograph size={42} />
+              <p className="text-[20px] text-[#4D4C7D] font-normal">
+                {splitString(fileDataURL)}
+              </p>
+              <Upload
+                onFileSelected={(e: File) => {
+                  setFile(e);
+                }}
+                onFileRejected={handleFileRejected}
+                onFileDeleted={() => setFile(undefined)}
+                tipe={"2"}
+              />
+            </div>
+          </div>
+        )}
+        {roomData && (
           <form
             action=""
             className="flex flex-col gap-4 grow"
@@ -152,9 +264,9 @@ function EditRoom({ idx }: { idx: number }) {
             <Textfield
               type={"field"}
               placeholder={"Nama ruangan"}
-              value={data.name}
+              value={roomData.name}
               onChange={(e) =>
-                setData((prevData: any) => ({
+                setRoomData((prevData: any) => ({
                   ...prevData,
                   name: e.target.value,
                 }))
@@ -163,9 +275,9 @@ function EditRoom({ idx }: { idx: number }) {
             <Textfield
               type={"field"}
               placeholder={"Lantai"}
-              value={data.floor}
+              value={roomData.floor}
               onChange={(e) =>
-                setData((prevData: any) => ({
+                setRoomData((prevData: any) => ({
                   ...prevData,
                   floor: e.target.value,
                 }))
@@ -174,9 +286,9 @@ function EditRoom({ idx }: { idx: number }) {
             <Textfield
               type={"area"}
               placeholder={"Description"}
-              value={data.description}
+              value={roomData.description}
               onChangeArea={(e) =>
-                setData((prevData: any) => ({
+                setRoomData((prevData: any) => ({
                   ...prevData,
                   description: e.target.value,
                 }))
@@ -186,9 +298,9 @@ function EditRoom({ idx }: { idx: number }) {
               <Textfield
                 type={"field"}
                 placeholder={"Price"}
-                value={data.price}
+                value={roomData.price}
                 onChange={(e) =>
-                  setData((prevData: any) => ({
+                  setRoomData((prevData: any) => ({
                     ...prevData,
                     price: e.target.value,
                   }))
@@ -203,9 +315,11 @@ function EditRoom({ idx }: { idx: number }) {
       <p className="text-[32px] font-medium mt-8 px-28">Facilities</p>
       <div className="mt-7 grid grid-cols-2 gap-x-24 gap-y-4 px-28">
         {facility &&
-          facility.map((row: Facility) => <EditFacility data={row} />)}
+          facility.map((row: Facility) => (
+            <EditFacility data={row} fetch={fetchFacility} />
+          ))}
         <div className="w-full flex items-center gap-4">
-          <div className="w-[270px] py-[10px] rounded-lg text-[#6B6B6B]">
+          <div className="w-[270px] rounded-lg text-[#6B6B6B]">
             <Textfield
               type={"field"}
               placeholder={"Nama Fasilitas"}
@@ -217,7 +331,7 @@ function EditRoom({ idx }: { idx: number }) {
               }
             />
           </div>
-          <div className="w-[150px] py-[10px] rounded-lg text-[#6B6B6B] mr-8">
+          <div className="w-[150px] rounded-lg text-[#6B6B6B] mr-8">
             <Dropdown
               placeholder={"Status"}
               options={option}

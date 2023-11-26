@@ -4,4 +4,5 @@ export default interface Room {
     floor: string;
     description: string;
     price: number;
+    photo_url: string;
   }
