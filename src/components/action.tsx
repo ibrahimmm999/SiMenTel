@@ -8,11 +8,17 @@ function Action({
   status,
   onChangeEdit,
   onChangeDelete,
+  onChangeAccept,
+  onChangeReject,
+  loading,
 }: {
   id: string;
   status: string;
+  loading?: boolean;
   onChangeEdit?: (x: string) => void;
   onChangeDelete?: (x: string) => void;
+  onChangeAccept?: (x: string) => void;
+  onChangeReject?: (x: string) => void;
 }) {
   console.log(id);
   return (
@@ -20,22 +26,52 @@ function Action({
       {status == "WAITING" ? (
         <div className="w-full flex justify-center gap-2">
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<BiSolidPencil />}
             color="primary"
-            onClick={() => onChangeEdit!(id)}
+            onClick={() => {
+              if (onChangeEdit) {
+                onChangeEdit(id);
+              }
+            }}
           />
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<FaTrashCan />}
             color="red"
-            onClick={() => onChangeDelete!(id)}
+            onClick={() => {
+              if (onChangeDelete) {
+                onChangeDelete(id);
+              }
+            }}
           />
         </div>
       ) : status == "REVIEW" ? (
         <div className="w-full flex justify-center gap-2">
-          <Button type={"button"} icon={<AiOutlineCheck />} color="green" />
-          <Button type={"button"} icon={<AiOutlineClose />} color="red" />
+          <Button
+            isLoading={loading}
+            type={"button"}
+            icon={<AiOutlineCheck />}
+            color="green"
+            onClick={() => {
+              if (onChangeAccept) {
+                onChangeAccept(id);
+              }
+            }}
+          />
+          <Button
+            isLoading={loading}
+            type={"button"}
+            icon={<AiOutlineClose />}
+            color="red"
+            onClick={() => {
+              if (onChangeReject) {
+                onChangeReject(id);
+              }
+            }}
+          />
         </div>
       ) : status == "FIXED" ? (
         <div className="w-full flex justify-center text-green-primary text-xl">
