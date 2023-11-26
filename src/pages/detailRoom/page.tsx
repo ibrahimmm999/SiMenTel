@@ -7,10 +7,32 @@ import Room from "../../interfaces/room";
 import { toastError } from "../../components/toast";
 import Facility from "../../interfaces/facility";
 import { FormatRupiah } from "@arismun/format-rupiah";
+import User from "../../interfaces/user";
 
 function DetailRoom({ idx }: { idx: number }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [facility, setFacility] = useState<Facility[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string>("");
+
+  const fetchUserData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      if (error) {
+        console.error("Error fetching user data:", error);
+        return;
+      }
+      setCurrentUser(data);
+      setRole(data?.role || null);
+      console.log(currentUser);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -65,6 +87,10 @@ function DetailRoom({ idx }: { idx: number }) {
     fetchFacility();
   }, []);
 
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
   return (
     <div className="w-full flex flex-col pb-10">
       <Navbar />
@@ -85,15 +111,25 @@ function DetailRoom({ idx }: { idx: number }) {
           <div className="flex flex-col gap-5">
             <div className="w-full flex justify-between items-center">
               <p className="text-[24px] font-bold">
-                Price: {room && <FormatRupiah value={room.price}/>}
+                Price: {room && <FormatRupiah value={room.price} />}
               </p>
-              <Button type={"button"} text="Edit Detail" />
+              {role == "admin" ? (
+                <Button type={"button"} text="Edit Detail" />
+              ) : (
+                ""
+              )}
             </div>
             <hr className=" h-1 bg-black" />
           </div>
         </div>
       </div>
-      <p className="text-[32px] font-medium mt-12 px-28">Facilities</p>
+      <div className="w-full flex justify-between items-center px-28 mt-12">
+        <p className="text-[32px] font-medium">Facilities</p>
+        <Button
+          type={"button"}
+          text={role == "admin" ? "Add Maintenance" : "Add Check"}
+        />
+      </div>
       <div className="flex gap-14 mt-8 flex-wrap px-28">
         {facility &&
           facility.map((row: any) => (
