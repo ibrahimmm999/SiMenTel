@@ -195,10 +195,11 @@ function MaintenancePage() {
           status: "FIXED",
         })
         .eq("id", maintenanceId);
-
       if (error) {
+        toastError("Error Accepting Maintenance");
         console.error("Error accepting maintenance:", error);
       } else {
+        toastSuccess("Maintenance accepted");
         console.log("Maintenance accepted successfully:", data);
       }
       setLoading(false);
@@ -234,6 +235,7 @@ function MaintenancePage() {
       if (error) {
         console.error("Error rejecting maintenance:", error);
       } else {
+        toastError("Maintenance rejected");
         console.log("Maintenance rejected successfully:", data);
       }
       setLoading(false);
@@ -254,6 +256,7 @@ function MaintenancePage() {
       if (error) {
         console.error("Error deleting maintenance data:", error);
       } else {
+        toastSuccess("Maintenance data deleted");
         console.log("Maintenance data deleted successfully:", data);
       }
       setLoading(false);
@@ -270,30 +273,82 @@ function MaintenancePage() {
       input.type = "file";
       input.accept = ".pdf";
       input.click();
+
       input.addEventListener("change", async (e) => {
         const selectedFile = (e.target as HTMLInputElement).files?.[0];
+
         if (selectedFile) {
-          toastSuccess(selectedFile?.name);
           setLoading(true);
+          toastSuccess(selectedFile?.name);
+          // Fetch existing maintenance data
+          const { data: existingMaintenance, error: existingMaintenanceError } =
+            await supabase
+              .from("maintenances")
+              .select("evidence_url")
+              .eq("id", maintenanceId)
+              .single();
+
+          if (existingMaintenanceError) {
+            console.error(
+              "Error fetching existing maintenance data:",
+              existingMaintenanceError
+            );
+            toastError("Error fetching existing maintenance data");
+            setLoading(false);
+            return;
+          }
+
+          // Check if evidence_url in existing maintenance data is not null
+          if (existingMaintenance?.evidence_url) {
+            const oldFileName = existingMaintenance.evidence_url
+              .split("/")
+              .pop();
+            // Remove the old file from Supabase storage
+            const { data: deleteData, error: deleteError } =
+              await supabase.storage
+                .from("evidence")
+                .remove([`public/${oldFileName}`]);
+
+            if (deleteError) {
+              console.error(
+                "Error deleting old file from storage:",
+                deleteError
+              );
+              toastError("Error deleting old file from storage");
+              setLoading(false);
+              return;
+            } else {
+              console.log("Old file deleted successfully:", deleteData);
+            }
+          }
+
           const { data: fileData, error: fileError } = await supabase.storage
             .from("evidence")
             .upload(`public/${selectedFile.name}`, selectedFile, {
               cacheControl: "3600",
               upsert: false,
             });
+
           if (fileError) {
             console.error("Error uploading file:", fileError);
-            toastError("Error uploading file");
+            toastError(fileError.message);
           } else {
             console.log("File uploaded successfully:", fileData);
             toastSuccess("File uploaded successfully");
+
             const { data } = supabase.storage
               .from("evidence")
               .getPublicUrl(`public/${selectedFile.name}`);
+
             const { data: updateData, error: updateError } = await supabase
               .from("maintenances")
-              .update({ evidence_url: data.publicUrl, status: "REVIEW" })
+              .update({
+                evidence_url: data.publicUrl,
+                status: "REVIEW",
+                work_time: new Date().toISOString(),
+              })
               .eq("id", maintenanceId);
+
             if (updateError) {
               console.error("Error updating maintenance data:", updateError);
               toastError("Error updating maintenance data");
@@ -302,8 +357,9 @@ function MaintenancePage() {
               fetchData();
             }
           }
-          setLoading(false);
         }
+
+        setLoading(false);
       });
     } catch (error) {
       console.error("Error handling file upload:", error);
@@ -332,10 +388,12 @@ function MaintenancePage() {
       <Button
         disable={item.status == "WAITING"}
         type={"button"}
+        isLoading={loading}
         onClick={() => handleOnClickLaporan(item.evidence_url)}
         icon={<FaFile />}
       />,
       <Action
+        loading={loading}
         id={item.id.toString()}
         status={item.status}
         onChangeEdit={(id) => {
@@ -365,6 +423,7 @@ function MaintenancePage() {
         item.room?.floor || "",
         item.detail,
         <Button
+          isLoading={loading}
           disable={item.status === "FIXED"}
           type="button"
           onClick={() => handleFileUpload(item.id)}

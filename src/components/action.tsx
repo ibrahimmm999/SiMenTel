@@ -10,9 +10,11 @@ function Action({
   onChangeDelete,
   onChangeAccept,
   onChangeReject,
+  loading,
 }: {
   id: string;
   status: string;
+  loading?: boolean;
   onChangeEdit?: (x: string) => void;
   onChangeDelete?: (x: string) => void;
   onChangeAccept?: (x: string) => void;
@@ -24,6 +26,7 @@ function Action({
       {status == "WAITING" ? (
         <div className="w-full flex justify-center gap-2">
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<BiSolidPencil />}
             color="primary"
@@ -34,6 +37,7 @@ function Action({
             }}
           />
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<FaTrashCan />}
             color="red"
@@ -47,6 +51,7 @@ function Action({
       ) : status == "REVIEW" ? (
         <div className="w-full flex justify-center gap-2">
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<AiOutlineCheck />}
             color="green"
@@ -57,6 +62,7 @@ function Action({
             }}
           />
           <Button
+            isLoading={loading}
             type={"button"}
             icon={<AiOutlineClose />}
             color="red"
