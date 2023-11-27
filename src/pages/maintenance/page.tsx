@@ -197,7 +197,7 @@ function MaintenancePage() {
         await supabase
           .from("rooms")
           .update({ condition_status: true })
-          .eq("id", parseInt(roomToUpdate.id));
+          .eq("id", roomToUpdate.id);
       }
 
       setListDetail([]);
