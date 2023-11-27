@@ -9,7 +9,6 @@ import Room from "../../interfaces/room";
 import { useNavigate } from "react-router-dom";
 
 function ListRoom() {
-
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<Room[]>(rooms);
   const [search, setSearch] = useState<string | undefined>("");
@@ -39,7 +38,7 @@ function ListRoom() {
             };
           });
           setRooms(dataRoom);
-          setTrigger((prev) => prev+1)
+          setTrigger((prev) => prev + 1);
         } else {
           toastError("Data Room not found");
         }
@@ -60,15 +59,17 @@ function ListRoom() {
         }
         if (data && rooms && data.length > 0 && rooms.length > 0) {
           data.forEach((item) => {
-            var room_index = rooms.findIndex((room) => item.room_id === room.id);
+            var room_index = rooms.findIndex(
+              (room) => item.room_id === room.id
+            );
             const updatedRooms = [...rooms];
             updatedRooms[room_index] = {
               ...updatedRooms[room_index],
               condition_status: item.is_maintenance,
             };
-            setRooms(updatedRooms)
+            setRooms(updatedRooms);
           });
-        } 
+        }
       } catch (error) {
         toastError(error as string);
       }
@@ -76,14 +77,14 @@ function ListRoom() {
     fetchCheck();
   }, [trigger]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (search != undefined && search != "") {
       const filtered = rooms.filter((item: any) =>
         Object.values(item).some((value: any) =>
           String(value).toLowerCase().includes(search.toLowerCase())
         )
       );
-      setFilteredRooms(filtered) 
+      setFilteredRooms(filtered);
       // setPaginatedData(
       //   filtered.slice((page - 1) * dataLimit, page * dataLimit)
       // );
@@ -93,8 +94,8 @@ function ListRoom() {
       //     : Math.floor(filtered.length / dataLimit) + 1
       // );
     } else {
-      setFilteredRooms(rooms)
-      console.log(filteredRooms)
+      setFilteredRooms(rooms);
+      console.log(filteredRooms);
       // setPaginatedData(dataPm.slice((page - 1) * dataLimit, page * dataLimit));
       // setPaginatedDataTambahan(dataTambahanPm.slice((page - 1) * dataLimit, page * dataLimit));
       // setTotalPages(
@@ -108,10 +109,6 @@ function ListRoom() {
     // }
   }, [search, rooms]);
 
-  function filterCondition() {
-    
-  }
-
   return (
     <div className="w-full flex flex-col pb-10 bg-background min-h-screen pt-[120PX] px-4 xl:px-28 gap-12 items-center">
       <h1 className="text-[24px] md:text-[36px] xl:text-[64px] font-bold text-purple-primary text-center">
@@ -123,17 +120,27 @@ function ListRoom() {
       <div className="w-full">
         <div className="flex justify-between xl:items-center mb-10 flex-col-reverse md:flex-row items-start gap-2 md:gap-0">
           <div className="flex gap-2">
-            <Textfield type={"search"} placeholder={"Search"} onChange={(e) => setSearch(e.target.value)}/>
+            <Textfield
+              type={"search"}
+              placeholder={"Search"}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <Button type={"button"} text="Filter" icon={<FaFilter />} />
           </div>
           <Button type={"button"} text="Add User" />
         </div>
         <div className="w-full grid grid-cols-3 justify-items-center gap-y-10">
           {filteredRooms.map((item: any) => {
-            console.log(item.condition_status)
+            console.log(item.condition_status);
             return (
-              <CardRoom nama={item.name} lantai={item.floor} kondisi={item.condition_status} link={item.photo_url} onClick={() => navigate(`detail/${item.id}`)}/>
-            )
+              <CardRoom
+                nama={item.name}
+                lantai={item.floor}
+                kondisi={item.condition_status}
+                link={item.photo_url}
+                onClick={() => navigate(`detail/${item.id}`)}
+              />
+            );
           })}
         </div>
       </div>

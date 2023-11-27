@@ -55,7 +55,7 @@ function MaintenancePage() {
   const [roomOptions, setRoomOptions] = useState<
     { value: string; label: string }[]
   >([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [facilities] = useState<Facility[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [roomData, setRoomData] = useState<Room[]>([]);
