@@ -15,7 +15,7 @@ function Button({
   onClick?: MouseEventHandler<HTMLButtonElement> | undefined;
   onSubmit?: FormEventHandler<HTMLButtonElement> | undefined;
   isLoading?: boolean;
-  color?: "primary" | "red" | "green";
+  color?: "primary" | "red" | "green" | "secondary";
   icon?: React.ReactNode;
   disable?: boolean;
 }) {
@@ -34,11 +34,19 @@ function Button({
           ? "bg-orange-primary active:bg-orange-primary hover:bg-orange-secondary"
           : color == "green"
           ? "bg-green-primary active:bg-green-primary hover:bg-green-secondary"
-          : "bg-red-primary active:bg-red-primary hover:bg-red-400"
+          : color == "red"
+          ? "bg-red-primary active:bg-red-primary hover:bg-red-400"
+          : "bg-white border-2 border-orange-primary group hover:bg-orange-primary active:bg-orange-600"
       }`}
     >
       {isLoading ? (
-        <div className={"text-white flex items-center justify-center"}>
+        <div
+          className={`${
+            color == "secondary"
+              ? "text-orange-primary hover:text-white"
+              : "text-white"
+          }  flex items-center justify-center`}
+        >
           <svg
             className="mr-3 h-5 w-5 animate-spin"
             xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +70,13 @@ function Button({
           Loading...
         </div>
       ) : (
-        <div className={"text-white flex items-center justify-center gap-2"}>
+        <div
+          className={`${
+            color == "secondary"
+              ? "text-orange-primary group-hover:text-white"
+              : "text-white"
+          }  flex items-center justify-center gap-2`}
+        >
           {icon}
           {text}
         </div>

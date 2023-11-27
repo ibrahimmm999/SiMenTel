@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone, FileRejection } from "react-dropzone";
 import { BiUpload } from "react-icons/bi";
-import { HiOutlinePhotograph } from "react-icons/hi";
+import { HiOutlinePencil } from "react-icons/hi";
 
 interface DropzoneProps {
   onFileSelected: (files: File) => void;
   onFileRejected?: (fileRejections: FileRejection[]) => void;
   onFileDeleted: () => void;
-  name: string;
+  tipe: string;
 }
 
 function Upload({
   onFileSelected,
   onFileRejected,
   onFileDeleted,
-  name,
+  tipe,
 }: DropzoneProps) {
   const [file, setFile] = useState<File>();
   const handleDrop = useCallback(
@@ -47,37 +47,43 @@ function Upload({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleDrop,
-    maxFiles: 1, // Maximum number of files allowed
+    maxFiles: 1,
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div
-        className={`${
-          isDragActive ? "border-black" : "border-[#696969]"
-        } border-2 border-dashed rounded-lg bg-orange-ternary w-[560px]`}
-      >
+    <>
+      {tipe == "1" ? (
+        <div className="flex flex-col gap-4">
+          <div
+            className={`${
+              isDragActive ? "border-black" : "border-[#696969]"
+            } border-2 border-dashed rounded-lg bg-orange-ternary w-[560px]`}
+          >
+            <div
+              {...getRootProps()}
+              className={`dropzone flex flex-col justify-center items-center gap-[2px] cursor-pointer text-[#4D4C7D] px-32 py-32`}
+            >
+              <input {...getInputProps()} />
+              <BiUpload size={36} />
+              <p className="text-[20px] font-normal">
+                Pilih file yang ingin diunggah
+              </p>
+              <p className="text-[14px] font-light">
+                Atau letakkan file disini
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
         <div
           {...getRootProps()}
-          className={`dropzone flex flex-col justify-center items-center gap-[2px] cursor-pointer text-[#4D4C7D] px-32 py-32`}
+          className={`dropzone cursor-pointer text-orange-primary`}
         >
           <input {...getInputProps()} />
-          <BiUpload size={36} />
-          <p className="text-[20px] font-normal">
-            Pilih file yang ingin diunggah
-          </p>
-          <p className="text-[14px] font-light">Atau letakkan file disini</p>
+          <HiOutlinePencil size={32} />
         </div>
-      </div>
-      <div
-        className={`flex items-center gap-3 text-orange-primary ${
-          name ? "block" : "hidden"
-        }`}
-      >
-        <HiOutlinePhotograph size={42} />
-        <p className="text-[20px] text-[#4D4C7D] font-normal">{name}</p>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 export default Upload;
