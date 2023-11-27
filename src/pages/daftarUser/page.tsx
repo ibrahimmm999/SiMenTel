@@ -10,7 +10,6 @@ import Action from "../../components/action";
 import Modal from "../../components/modal";
 import Dropdown from "../../components/dropdown";
 import Filter from "../../components/filter";
-import { useNavigate } from "react-router-dom";
 
 function DaftarUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -39,12 +38,6 @@ function DaftarUser() {
 
     fetchUser();
   }, []);
-  if (user?.role != "admin") {
-    const navigator = useNavigate();
-    navigator("/");
-    toastError("Anda tidak punya izin");
-    return;
-  }
 
   const column = ["No", "Nama", "Email", "Kontak", "Role", "Action"];
   const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
@@ -267,7 +260,11 @@ function DaftarUser() {
   const indexOfFirstItem = indexOfLastItem - 10;
   const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
-  return (
+  return user?.role == "staff" ? (
+    <div className="min-h-screen w-full flex justify-center items-center">
+      Anda Tidak Diizinkan
+    </div>
+  ) : (
     <>
       <Modal
         visible={showDeletePopUp}

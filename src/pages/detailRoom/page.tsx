@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Button from "../../components/button";
-import Navbar from "../../components/navbar";
 import { supabase } from "../../lib/api";
 import FacilityCard from "./component/facility";
 import Room from "../../interfaces/room";
@@ -307,7 +306,6 @@ function DetailRoom() {
         }
       ></Modal>
       <div className="w-full flex flex-col pb-10">
-        <Navbar />
         <div className="w-full mt-[120PX] flex px-28 gap-24">
           <img
             src={fileDataURL}
