@@ -10,7 +10,7 @@ function Filter({
 }: {
   onSelected: (x: Array<string>) => void | undefined;
   selected: Array<string>;
-  data: Array<{ value: string; label: string }>;
+  data: Array<{ value: any; label: string }>;
 }) {
   const [showFilter, setShowFilter] = useState(false);
   return (

@@ -1,4 +1,3 @@
-import { FaFilter } from "react-icons/fa6";
 import Button from "../../components/button";
 import Textfield from "../../components/textfield";
 import { useEffect, useState } from "react";
@@ -7,13 +6,40 @@ import { toastError } from "../../components/toast";
 import CardRoom from "./components/cardRoom";
 import Room from "../../interfaces/room";
 import { useNavigate } from "react-router-dom";
+import Filter from "../../components/filter";
 
 function ListRoom() {
+  const [role, setRole] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<Room[]>(rooms);
   const [search, setSearch] = useState<string | undefined>("");
+  const [filter, setFilter] = useState<any[]>([]);
+  const filterData = [
+    { value: false, label: "Broken" },
+    { value: true, label: "Fine" },
+  ];
   const [trigger, setTrigger] = useState<number>(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        if (error) {
+          console.error("Error fetching user data:", error);
+          return;
+        }
+        setRole(data?.role || null);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -60,12 +86,15 @@ function ListRoom() {
         if (data && rooms && data.length > 0 && rooms.length > 0) {
           data.forEach((item) => {
             var room_index = rooms.findIndex(
-              (room) => item.room_id === room.id
+              (room) =>
+                item.room_id === room.id &&
+                item.detail != null &&
+                room.condition_status == false
             );
             const updatedRooms = [...rooms];
             updatedRooms[room_index] = {
               ...updatedRooms[room_index],
-              condition_status: item.is_maintenance,
+              condition_status: false,
             };
             setRooms(updatedRooms);
           });
@@ -93,9 +122,13 @@ function ListRoom() {
       //     ? filtered.length / dataLimit
       //     : Math.floor(filtered.length / dataLimit) + 1
       // );
+    } else if (filter.length > 0) {
+      const filtered = rooms.filter((item: any) =>
+        filter.includes(item.condition_status)
+      );
+      setFilteredRooms(filtered);
     } else {
       setFilteredRooms(rooms);
-      console.log(filteredRooms);
       // setPaginatedData(dataPm.slice((page - 1) * dataLimit, page * dataLimit));
       // setPaginatedDataTambahan(dataTambahanPm.slice((page - 1) * dataLimit, page * dataLimit));
       // setTotalPages(
@@ -107,27 +140,37 @@ function ListRoom() {
     // if (totalPages < page) {
     //   setPage(1);
     // }
-  }, [search, rooms]);
+  }, [search, rooms, filter]);
 
   return (
     <div className="w-full flex flex-col pb-10 bg-background min-h-screen pt-[120PX] px-4 xl:px-28 gap-12 items-center">
       <h1 className="text-[24px] md:text-[36px] xl:text-[64px] font-bold text-purple-primary text-center">
         DAFTAR KAMAR
         <h2 className="text-[16px] md:text-[24px] xl:text-[36px] text-orange-primary">
-          Jumlah Kamar : 685
+          Jumlah Kamar : {rooms.length}
         </h2>
       </h1>
       <div className="w-full">
         <div className="flex justify-between xl:items-center mb-10 flex-col-reverse md:flex-row items-start gap-2 md:gap-0">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Textfield
               type={"search"}
               placeholder={"Search"}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <Button type={"button"} text="Filter" icon={<FaFilter />} />
+            <Filter
+              selected={filter}
+              data={filterData}
+              onSelected={(val) => setFilter(val)}
+            />
           </div>
-          <Button type={"button"} text="Add User" />
+          {role == "admin" && (
+            <Button
+              type={"button"}
+              text="Add Room"
+              onClick={() => navigate(`add`)}
+            />
+          )}
         </div>
         <div className="w-full grid grid-cols-3 justify-items-center gap-y-10">
           {filteredRooms.map((item: any) => {

@@ -15,6 +15,7 @@ import DetailRoom from "./pages/detailRoom/page";
 import EditRoom from "./pages/editRoom/page";
 import MaintenancePage from "./pages/maintenance/page";
 import AddRoom from "./pages/addRoom/page";
+import Dashboard from "./pages/dashboard/page";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
@@ -43,7 +44,7 @@ function Root() {
       <Route path="/login" element={<Login />} />
       <Route path="*" element={<Dummy title={"Not Found"} />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Dummy title={"Home"} />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/room">
           <Route path="" element={<ListRoom />} />
           <Route path="add" element={<AddRoom />} />
