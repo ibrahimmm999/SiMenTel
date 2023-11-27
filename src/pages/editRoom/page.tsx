@@ -13,8 +13,9 @@ import Facility from "../../interfaces/facility";
 import Dropdown from "../../components/dropdown";
 import { HiOutlinePhotograph } from "react-icons/hi";
 import User from "../../interfaces/user";
+import { useNavigate, useParams } from "react-router-dom";
 
-function EditRoom({ idx }: { idx: number }) {
+function EditRoom() {
   const [file, setFile] = useState<File>();
   const [fileDataURL, setFileDataURL] = useState<string>("");
   const [roomData, setRoomData] = useState<Room | null>(null);
@@ -26,6 +27,9 @@ function EditRoom({ idx }: { idx: number }) {
   ];
   const [trigger, setTrigger] = useState<number>(0);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const params = useParams();
+  const navigate = useNavigate();
 
   const fetchUserData = async () => {
     try {
@@ -65,11 +69,12 @@ function EditRoom({ idx }: { idx: number }) {
 
   const handleOnUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       if (file) {
         const {} = await supabase.storage
-          .from("photo_room")
-          .upload(`public/${file.name}`, file, {
+        .from("photo_room")
+        .upload(`public/${file.name}`, file, {
             cacheControl: "3600",
             upsert: false,
           });
@@ -85,12 +90,13 @@ function EditRoom({ idx }: { idx: number }) {
             price: roomData && roomData.price,
             photo_url: data.publicUrl,
           })
-          .eq("id", idx);
+          .eq("id", params.idx);
 
         if (error) {
           throw new Error(`Error update room data: ${error.message}`);
         } else {
           toastSuccess("Update Success");
+          navigate(`/room/detail/${params.idx}`);
         }
       } else {
         const { error } = await supabase
@@ -101,30 +107,34 @@ function EditRoom({ idx }: { idx: number }) {
             description: roomData && roomData.description,
             price: roomData && roomData.price,
           })
-          .eq("id", idx);
-
-        if (error) {
-          throw new Error(`Error update room data: ${error.message}`);
-        } else {
-          toastSuccess("Update Success");
+          .eq("id", params.idx);
+          
+          if (error) {
+            throw new Error(`Error update room data: ${error.message}`);
+          } else {
+            toastSuccess("Update Success");
+            navigate(`/room/detail/${params.idx}`);
+          }
         }
+      } catch (error) {
+        toastError(error as string);
+      }finally{
+        setIsLoading(false);
       }
-    } catch (error) {
-      toastError(error as string);
-    }
-  };
-
+    };
+    
   const handleAddFacility = async () => {
     try {
       const { error } = await supabase.from("facilities").insert({
         name: newFacility && newFacility.name,
         status: newFacility && newFacility.status,
-        room_id: idx,
+        room_id: params.idx,
       });
       if (error) {
         throw new Error(`Error add facility data: ${error.message}`);
       } else {
         toastSuccess("Add Facility Success");
+        window.location.reload();
         setTrigger(trigger + 1);
       }
     } catch (error) {
@@ -138,7 +148,7 @@ function EditRoom({ idx }: { idx: number }) {
         const { data, error } = await supabase
           .from("rooms")
           .select()
-          .eq("id", idx)
+          .eq("id", params.idx)
           .single();
 
         if (error) {
@@ -164,7 +174,7 @@ function EditRoom({ idx }: { idx: number }) {
       const { data, error } = await supabase
         .from("facilities")
         .select()
-        .eq("room_id", idx);
+        .eq("room_id", params.idx);
 
       if (error) {
         throw new Error(`Error fetching facility data: ${error.message}`);
@@ -232,12 +242,12 @@ function EditRoom({ idx }: { idx: number }) {
               />
             </div>
           </div>
-        ) : (
+        ) : fileDataURL ? (
           <div className="flex flex-col gap-4">
             <img
               src={fileDataURL}
               alt=""
-              className="w-[560px] h-[36x0px] cover rounded-lg"
+              className="w-[560px] max-h-[360px] cover rounded-lg"
             />
             <div className={`flex items-center gap-3 text-orange-primary`}>
               <HiOutlinePhotograph size={42} />
@@ -254,6 +264,15 @@ function EditRoom({ idx }: { idx: number }) {
               />
             </div>
           </div>
+        ) : (
+          <Upload
+            onFileSelected={(e: File) => {
+              setFile(e);
+            }}
+            onFileRejected={handleFileRejected}
+            onFileDeleted={() => setFile(undefined)}
+            tipe={"1"}
+          />
         )}
         {roomData && (
           <form
@@ -306,7 +325,11 @@ function EditRoom({ idx }: { idx: number }) {
                   }))
                 }
               />
-              <Button type={"submit"} text="Save" />
+              <Button
+                type={"submit"}
+                text="Save"
+                isLoading={isLoading}
+              />
             </div>
             <hr className="h-1 bg-black" />
           </form>

@@ -10,12 +10,15 @@ import Upload from "../editRoom/component/upload";
 import Textfield from "../../components/textfield";
 import Button from "../../components/button";
 import User from "../../interfaces/user";
+import { useNavigate } from "react-router-dom";
 
 function AddRoom() {
   const [file, setFile] = useState<File>();
   const [fileDataURL, setFileDataURL] = useState<string>("");
   const [roomData, setRoomData] = useState<Room | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const fetchUserData = async () => {
     try {
@@ -51,6 +54,7 @@ function AddRoom() {
 
   const handleAddRoom = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       if (file) {
         const {} = await supabase.storage
@@ -74,12 +78,31 @@ function AddRoom() {
           throw new Error(`Error update room data: ${error.message}`);
         } else {
           toastSuccess("Add Room Success");
+          const { data } = await supabase
+            .from("rooms")
+            .select()
+            .eq("name", roomData && roomData.name)
+            .single();
+          handleAddCheck(data.id);
         }
       }
     } catch (error) {
       toastError(error as string);
       console.log(error);
+    }finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleAddCheck = async (id: number) => {
+    try {
+      const { error } = await supabase.from("checks").insert({ room_id: id });
+      if (error) {
+        throw new Error(`Error update room data: ${error.message}`);
+      }else{
+        navigate("/room");
+      }
+    } catch (error) {}
   };
 
   useEffect(() => {
@@ -108,7 +131,7 @@ function AddRoom() {
             <img
               src={fileDataURL}
               alt=""
-              className="w-[560px] h-[36x0px] cover rounded-lg"
+              className="w-[560px] h-[390px] max-h-[390px] cover rounded-lg"
             />
             <div
               className={`flex items-center gap-3 text-orange-primary ${
@@ -185,7 +208,7 @@ function AddRoom() {
                 }))
               }
             />
-            <Button type={"submit"} text="Add" />
+            <Button type={"submit"} text="Add" isLoading={isLoading}/>
           </div>
           <hr className="h-1 bg-black" />
         </form>
