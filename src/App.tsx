@@ -1,35 +1,68 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+  Routes,
+  createBrowserRouter,
+} from "react-router-dom";
+import Navbar from "./components/navbar";
+import Login from "./pages/login/page";
+import Cookies from "js-cookie";
+import DaftarUser from "./pages/daftarUser/page";
+import ListRoom from "./pages/listRoom/page";
+import DetailRoom from "./pages/detailRoom/page";
+import EditRoom from "./pages/editRoom/page";
+import MaintenancePage from "./pages/maintenance/page";
+import AddRoom from "./pages/addRoom/page";
 
-function App() {
-  const [count, setCount] = useState(0)
+const router = createBrowserRouter([{ path: "*", Component: Root }]);
+
+const ProtectedRoute = () => {
+  const token = Cookies.get("token_simentel");
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Navbar />
+      <Outlet />
     </>
-  )
+  );
+};
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
 
-export default App
+function Root() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Dummy title={"Not Found"} />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dummy title={"Home"} />} />
+        <Route path="/room">
+          <Route path="" element={<ListRoom />} />
+          <Route path="add" element={<AddRoom />} />
+          <Route path="detail/:idx">
+            <Route path="" element={<DetailRoom />} />
+            <Route path="edit" element={<EditRoom />} />
+          </Route>
+        </Route>
+        <Route path="/maintenance" element={<MaintenancePage />} />
+        <Route path="/staff" element={<DaftarUser />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function Dummy({ title }: { title: string }) {
+  return (
+    <div className="min-h-screen w-full flex justify-center items-center">
+      {title}
+    </div>
+  );
+}
