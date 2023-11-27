@@ -10,6 +10,7 @@ import Navbar from "./components/navbar";
 import Login from "./pages/login/page";
 import Cookies from "js-cookie";
 import DaftarUser from "./pages/daftarUser/page";
+import MaintenancePage from "./pages/maintenance/page";
 
 const router = createBrowserRouter([{ path: "*", Component: Root }]);
 
@@ -40,7 +41,7 @@ function Root() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Dummy title={"Home"} />} />
         <Route path="/room" element={<Dummy title={"Room"} />} />
-        <Route path="/maintenance" element={<Dummy title={"Maintenance"} />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/staff" element={<DaftarUser />} />
       </Route>
     </Routes>

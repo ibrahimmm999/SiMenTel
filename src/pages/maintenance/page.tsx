@@ -2,7 +2,7 @@ import Button from "../../components/button";
 import Table from "../../components/table";
 import Paginate from "../../components/paginate";
 import Status from "../../components/status";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/api";
 import Modal from "../../components/modal";
 import Datepicker from "../../components/datepicker";
@@ -16,6 +16,8 @@ import Textfield from "../../components/textfield";
 import Room from "../../interfaces/room";
 import User from "../../interfaces/user";
 import Maintenance from "../../interfaces/maintenance";
+import Facility from "../../interfaces/facility";
+import React from "react";
 
 function MaintenancePage() {
   const kolomAdmin = [
@@ -41,28 +43,19 @@ function MaintenancePage() {
     "Laporan",
   ];
 
-  const listDetail = [
-    { label: "AC", value: "AC" },
-    { label: "Kasur", value: "Kasur" },
-    { label: "Lemari", value: "Lemari" },
-  ];
-
+  const [listDetail, setListDetail] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
-
-  // Loading
   const [loading, setLoading] = useState(false);
-
-  // Dropdown Staff
   const [staffOptions, setStaffOptions] = useState<
     { value: string; label: string }[]
   >([]);
-
-  // Dropdown Nama Ruangan
   const [roomOptions, setRoomOptions] = useState<
     { value: string; label: string }[]
   >([]);
-
+  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [roomData, setRoomData] = useState<Room[]>([]);
@@ -74,7 +67,6 @@ function MaintenancePage() {
   const [showFilter, setShowFilter] = useState(false);
   const [showEditPopUp, setShowEditPopUp] = useState<boolean>(false);
   const [maintenanceData, setMaintenanceData] = useState<Maintenance[]>([]);
-
   const [editMaintenanceData, setEditMaintenanceData] =
     useState<Maintenance | null>(null);
   const [checkboxValues, setCheckboxValues] = useState<Record<string, boolean>>(
@@ -83,10 +75,39 @@ function MaintenancePage() {
   const [checkedColumns, setCheckedColumns] = useState<Record<string, boolean>>(
     kolomAdmin.reduce((acc, column) => ({ ...acc, [column]: true }), {})
   );
-
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
+  const handleRuanganChange = async (selectedRuangan: string) => {
+    try {
+      const room_id = roomData.find(
+        (room) => room.name === selectedRuangan
+      )?.id;
+      const { data: facilitiesData, error } = await supabase
+        .from("facilities")
+        .select("name")
+        .eq("room_id", room_id);
+      if (error) {
+        console.error("Error fetching facilities data:", error);
+        return;
+      }
+      const newListDetail = facilitiesData.map((facility) => ({
+        value: facility.name,
+        label: facility.name,
+      }));
+      setListDetail(newListDetail);
+    } catch (error) {
+      console.error("Error handling room change:", error);
+    }
+  };
+
+  useEffect(() => {
+    const newListDetail = facilities.map((facility) => ({
+      value: facility.name,
+      label: facility.name,
+    }));
+    setListDetail(newListDetail);
+  }, [facilities]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -115,15 +136,12 @@ function MaintenancePage() {
       const { data: maintenanceData, error: maintenanceError } = await supabase
         .from("maintenances")
         .select("*");
-
       const { data: roomData, error: roomError } = await supabase
         .from("rooms")
         .select("*");
-
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("*");
-
       if (maintenanceError || roomError || userError) {
         console.error(
           "Error fetching data:",
@@ -165,11 +183,9 @@ function MaintenancePage() {
           .join(", "),
         user_id: userData.find((user) => user.name === staff)?.id || "",
       };
-
       const { data, error } = await supabase
         .from("maintenances")
         .upsert([maintenanceToAdd]);
-
       if (error) {
         toastError("Error adding maintenance data");
       } else {
@@ -189,12 +205,32 @@ function MaintenancePage() {
   const handleAcceptMaintenance = async (maintenanceId: number) => {
     try {
       setLoading(true);
+      const maintenanceData = await supabase
+        .from("maintenances")
+        .select("detail, room_id")
+        .eq("id", maintenanceId)
+        .single();
+      if (!maintenanceData.data) {
+        console.error("Maintenance data not found");
+        setLoading(false);
+        return;
+      }
+      const { detail, room_id } = maintenanceData.data;
+      const detailArray = detail.split(", ");
+      for (const facilityName of detailArray) {
+        await supabase
+          .from("facilities")
+          .update({ status: true })
+          .eq("room_id", room_id)
+          .eq("name", facilityName);
+      }
       const { data, error } = await supabase
         .from("maintenances")
         .update({
           status: "FIXED",
         })
         .eq("id", maintenanceId);
+
       if (error) {
         toastError("Error Accepting Maintenance");
         console.error("Error accepting maintenance:", error);
@@ -228,7 +264,7 @@ function MaintenancePage() {
       const { data, error } = await supabase
         .from("maintenances")
         .update({
-          status: "WAITING",
+          status: "NOT FIXED",
           evidence_url: null,
         })
         .eq("id", maintenanceId);
@@ -273,21 +309,18 @@ function MaintenancePage() {
       input.type = "file";
       input.accept = ".pdf";
       input.click();
-
       input.addEventListener("change", async (e) => {
         const selectedFile = (e.target as HTMLInputElement).files?.[0];
 
         if (selectedFile) {
           setLoading(true);
           toastSuccess(selectedFile?.name);
-          // Fetch existing maintenance data
           const { data: existingMaintenance, error: existingMaintenanceError } =
             await supabase
               .from("maintenances")
               .select("evidence_url")
               .eq("id", maintenanceId)
               .single();
-
           if (existingMaintenanceError) {
             console.error(
               "Error fetching existing maintenance data:",
@@ -297,18 +330,14 @@ function MaintenancePage() {
             setLoading(false);
             return;
           }
-
-          // Check if evidence_url in existing maintenance data is not null
           if (existingMaintenance?.evidence_url) {
             const oldFileName = existingMaintenance.evidence_url
               .split("/")
               .pop();
-            // Remove the old file from Supabase storage
             const { data: deleteData, error: deleteError } =
               await supabase.storage
                 .from("evidence")
                 .remove([`public/${oldFileName}`]);
-
             if (deleteError) {
               console.error(
                 "Error deleting old file from storage:",
@@ -328,18 +357,15 @@ function MaintenancePage() {
               cacheControl: "3600",
               upsert: false,
             });
-
           if (fileError) {
             console.error("Error uploading file:", fileError);
             toastError(fileError.message);
           } else {
             console.log("File uploaded successfully:", fileData);
             toastSuccess("File uploaded successfully");
-
             const { data } = supabase.storage
               .from("evidence")
               .getPublicUrl(`public/${selectedFile.name}`);
-
             const { data: updateData, error: updateError } = await supabase
               .from("maintenances")
               .update({
@@ -348,7 +374,6 @@ function MaintenancePage() {
                 work_time: new Date().toISOString(),
               })
               .eq("id", maintenanceId);
-
             if (updateError) {
               console.error("Error updating maintenance data:", updateError);
               toastError("Error updating maintenance data");
@@ -358,7 +383,6 @@ function MaintenancePage() {
             }
           }
         }
-
         setLoading(false);
       });
     } catch (error) {
@@ -455,26 +479,48 @@ function MaintenancePage() {
     window.open(url, "_blank");
   };
 
-  const handleEditMaintenance = (maintenanceId: number) => {
-    const maintenanceToEdit = maintenanceData.find(
-      (maintenance) => maintenance.id === maintenanceId
-    );
-    if (maintenanceToEdit) {
-      const { assign_time, user, room, detail } = maintenanceToEdit;
-      setTanggal(assign_time ? new Date(assign_time) : null);
-      setStaff(user?.name || "");
-      setRuangan(room?.name || "");
-      const newCheckboxValues: Record<string, boolean> = {};
-      listDetail.forEach((detailOption) => {
-        newCheckboxValues[detailOption.value] = detail.includes(
-          detailOption.value
-        );
-      });
-      setCheckboxValues(newCheckboxValues);
-      setEditMaintenanceData(maintenanceToEdit);
-      setShowEditPopUp(true);
-    } else {
-      console.error(`Maintenance with ID ${maintenanceId} not found.`);
+  const handleEditMaintenance = async (maintenanceId: number) => {
+    try {
+      const maintenanceToEdit = maintenanceData.find(
+        (maintenance) => maintenance.id === maintenanceId
+      );
+
+      if (maintenanceToEdit) {
+        const { assign_time, user, room, detail } = maintenanceToEdit;
+        const room_id = room?.id;
+        const { data: facilitiesData, error: facilitiesError } = await supabase
+          .from("facilities")
+          .select("name")
+          .eq("room_id", room_id);
+        if (facilitiesError) {
+          console.error("Error fetching facilities data:", facilitiesError);
+          toastError("Error fetching facilities data");
+          return;
+        }
+
+        const newListDetail = facilitiesData.map((facility) => ({
+          value: facility.name,
+          label: facility.name,
+        }));
+        setListDetail(newListDetail);
+        setTanggal(assign_time ? new Date(assign_time) : null);
+        setStaff(user?.name || "");
+        setRuangan(room?.name || "");
+        const newCheckboxValues: Record<string, boolean> = {};
+        newListDetail.forEach((detailOption) => {
+          newCheckboxValues[detailOption.value] = detail.includes(
+            detailOption.value
+          );
+        });
+        setCheckboxValues(newCheckboxValues);
+        setEditMaintenanceData(maintenanceToEdit);
+        setShowEditPopUp(true);
+      } else {
+        console.error(`Maintenance with ID ${maintenanceId} not found.`);
+      }
+    } catch (error) {
+      console.error("Error handling edit maintenance:", error);
+      toastError(error as string);
     }
   };
 
@@ -500,7 +546,6 @@ function MaintenancePage() {
               .join(", "),
             user_id: userData.find((user) => user.name === staff)?.id || "",
           };
-
           const { data: updateData, error: updateError } = await supabase
             .from("maintenances")
             .update(updatedMaintenance)
@@ -515,7 +560,6 @@ function MaintenancePage() {
         } else {
           console.log("data not found");
         }
-
         fetchData();
         setLoading(false);
         setShowEditPopUp(false);
@@ -531,6 +575,36 @@ function MaintenancePage() {
     }
   };
 
+  const handleCancelModal = (isAdd: boolean) => {
+    setListDetail([]);
+    setCheckboxValues(
+      listDetail.reduce(
+        (acc, detail) => ({ ...acc, [detail.value]: false }),
+        {}
+      )
+    );
+    isAdd ? setShowAssignMaintenance(false) : setShowEditPopUp(false);
+  };
+
+  const modalContentRef = useRef<HTMLDivElement | null>(null);
+  const modalContentEditRef = useRef<HTMLDivElement | null>(null);
+  const handleModalClose = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (
+      modalContentRef.current &&
+      !modalContentRef.current.contains(event.target as Node)
+    ) {
+      setShowAssignMaintenance(false);
+    }
+  };
+  const handleModalEditClose = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (
+      modalContentEditRef.current &&
+      !modalContentEditRef.current.contains(event.target as Node)
+    ) {
+      setShowEditPopUp(false);
+    }
+  };
+
   // paginate
   const indexOfLastItem = currentPage * 10;
   const indexOfFirstItem = indexOfLastItem - 10;
@@ -540,23 +614,21 @@ function MaintenancePage() {
     <>
       <Modal
         visible={showAssignMaintenance}
-        onClose={() => setShowAssignMaintenance(false)}
+        onClose={() => handleModalClose}
         children={
-          <div>
+          <div ref={modalContentRef}>
             <h1 className=" text-[40px] text-[#4D4C7D] font-bold mb-5">
               Assign Maintenance
             </h1>
-            <div className="flex mb-7 w-full gap-10">
-              <div className="w-1/2">
-                <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
-                  Tanggal
-                </p>
-                <Datepicker
-                  text="Masukkan Tanggal"
-                  required
-                  onChange={(val: Date) => setTanggal(val)}
-                />
-              </div>
+            <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
+              Tanggal
+            </p>
+            <Datepicker
+              text="Masukkan Tanggal"
+              required
+              onChange={(val: Date) => setTanggal(val)}
+            />
+            <div className="flex mb-7 w-full gap-10 mt-4">
               <div className="w-1/2">
                 <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
                   Staff
@@ -568,8 +640,6 @@ function MaintenancePage() {
                   onChange={(e) => setStaff(e?.value!)}
                 />
               </div>
-            </div>
-            <div className="flex w-full gap-10 mb-7">
               <div className="w-[50%]">
                 <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
                   Ruangan
@@ -577,33 +647,36 @@ function MaintenancePage() {
                 <Dropdown
                   placeholder="Nama Ruangan"
                   options={roomOptions}
-                  onChange={(e) => setRuangan(e?.value!)}
+                  onChange={(e) => {
+                    setRuangan(e?.value!);
+                    handleRuanganChange(e?.value!);
+                  }}
                 />
               </div>
-              <div className="w-1/2">
-                <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
-                  Detail Maintenance
-                </p>
-                <div className="flex mt-6">
-                  {listDetail.map((detail) => (
-                    <Checkbox
-                      key={detail.value}
-                      label={detail.label}
-                      id={detail.value}
-                      checked={checkboxValues[detail.value]}
-                      onChange={() => handleCheckboxChange(detail.value)}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
+            <p className="text-[16px] text-[#4D4C7D] font-semibold">
+              Detail Maintenance
+            </p>
+            <div className="flex flex-wrap">
+              {listDetail.map((detail) => (
+                <div key={detail.value} className={" mr-9 mt-4"}>
+                  <Checkbox
+                    label={detail.label}
+                    id={detail.value}
+                    checked={checkboxValues[detail.value]}
+                    onChange={() => handleCheckboxChange(detail.value)}
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-end mt-16 gap-4">
               <Button
                 type="button"
                 color="red"
                 text="Batalkan"
                 isLoading={loading}
-                onClick={() => setShowAssignMaintenance(false)}
+                onClick={() => handleCancelModal(true)}
               />
               <Button
                 isLoading={loading}
@@ -618,24 +691,22 @@ function MaintenancePage() {
       ></Modal>
       <Modal
         visible={showEditPopUp}
-        onClose={() => setShowEditPopUp(!showEditPopUp)}
+        onClose={() => handleModalEditClose}
         children={
-          <div>
+          <div ref={modalContentEditRef}>
             <h1 className=" text-[40px] text-[#4D4C7D] font-bold mb-5">
               Edit Maintenance
             </h1>
-            <div className="flex mb-7 w-full gap-10">
-              <div className="w-1/2">
-                <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
-                  Tanggal
-                </p>
-                <Datepicker
-                  defaultValue={tanggal || null}
-                  text="Masukkan Tanggal"
-                  required
-                  onChange={(val: Date) => setTanggal(val)}
-                />
-              </div>
+            <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
+              Tanggal
+            </p>
+            <Datepicker
+              defaultValue={tanggal || null}
+              text="Masukkan Tanggal"
+              required
+              onChange={(val: Date) => setTanggal(val)}
+            />
+            <div className="flex mb-7 w-full gap-10 mt-4">
               <div className="w-1/2">
                 <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
                   Staff
@@ -648,8 +719,6 @@ function MaintenancePage() {
                   onChange={(e) => setStaff(e?.value!)}
                 />
               </div>
-            </div>
-            <div className="flex w-full gap-10 mb-7">
               <div className="w-[50%]">
                 <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
                   Ruangan
@@ -658,33 +727,39 @@ function MaintenancePage() {
                   value={roomOptions.find((option) => option.value === ruangan)}
                   placeholder="Nama Ruangan"
                   options={roomOptions}
-                  onChange={(e) => setRuangan(e?.value!)}
+                  onChange={(e) => {
+                    setRuangan(e?.value!);
+                    handleRuanganChange(e?.value!);
+                  }}
                 />
               </div>
-              <div className="w-1/2">
-                <p className="mb-[8px] text-[16px] text-[#4D4C7D] font-semibold">
-                  Detail Maintenance
-                </p>
-                <div className="flex mt-6">
-                  {listDetail.map((detail) => (
-                    <Checkbox
-                      key={detail.value}
-                      label={detail.label}
-                      id={detail.value}
-                      checked={checkboxValues[detail.value]}
-                      onChange={() => handleCheckboxChange(detail.value)}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
+
+            <p className="text-[16px] text-[#4D4C7D] font-semibold">
+              Detail Maintenance
+            </p>
+            <div className="flex flex-wrap">
+              {listDetail.map((detail) => (
+                <div key={detail.value} className={" mr-9 mt-4"}>
+                  <Checkbox
+                    label={detail.label}
+                    id={detail.value}
+                    checked={checkboxValues[detail.value]}
+                    onChange={() => handleCheckboxChange(detail.value)}
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-end mt-16 gap-4">
               <Button
                 type="button"
                 color="red"
                 text="Batalkan"
                 isLoading={loading}
-                onClick={() => setShowEditPopUp(false)}
+                onClick={() => {
+                  handleCancelModal(false);
+                }}
               />
               <Button
                 isLoading={loading}
@@ -759,7 +834,7 @@ function MaintenancePage() {
           <div className="flex justify-center">
             <Paginate
               current={(currentPage) => setCurrentPage(currentPage)}
-              totalPages={2}
+              totalPages={Math.floor(filteredData.length / 10) + 1}
             />
           </div>
         </div>
