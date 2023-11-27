@@ -171,21 +171,42 @@ function MaintenancePage() {
   const handleAddMaintenance = async () => {
     try {
       setLoading(true);
+      if (!tanggal || !ruangan || !staff) {
+        toastError("Tanggal, Ruangan, dan Staff harus diisi.");
+        setLoading(false);
+        return;
+      }
       const maintenanceToAdd = {
         assign_time: tanggal?.toISOString() || "",
         work_time: null,
         status: "WAITING",
-        evidence_url: "-",
-        room_id: roomData.find((room) => room.name === ruangan)?.id || 1,
+        evidence_url: null,
+        room_id: roomData.find((room) => room.name === ruangan)?.id,
         detail: listDetail
           .filter((detail) => checkboxValues[detail.value])
           .map((selectedDetail) => selectedDetail.value)
           .join(", "),
-        user_id: userData.find((user) => user.name === staff)?.id || "",
+        user_id: userData.find((user) => user.name === staff)?.id,
       };
       const { data, error } = await supabase
         .from("maintenances")
         .upsert([maintenanceToAdd]);
+
+      const roomToUpdate = roomData.find((room) => room.name === ruangan);
+      if (roomToUpdate) {
+        await supabase
+          .from("rooms")
+          .update({ condition_status: true })
+          .eq("id", parseInt(roomToUpdate.id));
+      }
+
+      setListDetail([]);
+      setCheckboxValues(
+        listDetail.reduce(
+          (acc, detail) => ({ ...acc, [detail.value]: false }),
+          {}
+        )
+      );
       if (error) {
         toastError("Error adding maintenance data");
       } else {
@@ -199,6 +220,7 @@ function MaintenancePage() {
       toastError(error as string);
       fetchData();
       setLoading(false);
+    } finally {
     }
   };
 
@@ -210,12 +232,29 @@ function MaintenancePage() {
         .select("detail, room_id")
         .eq("id", maintenanceId)
         .single();
+
       if (!maintenanceData.data) {
         console.error("Maintenance data not found");
         setLoading(false);
         return;
       }
+
       const { detail, room_id } = maintenanceData.data;
+
+      // Update condition_status in rooms table
+      const roomToUpdate = roomData.find((room) => room.id === room_id);
+      if (roomToUpdate) {
+        await supabase
+          .from("rooms")
+          .update({ condition_status: false })
+          .eq("id", room_id);
+      }
+
+      await supabase
+        .from("checks")
+        .update({ detail: null })
+        .eq("room_id", room_id);
+
       const detailArray = detail.split(", ");
       for (const facilityName of detailArray) {
         await supabase
@@ -224,6 +263,8 @@ function MaintenancePage() {
           .eq("room_id", room_id)
           .eq("name", facilityName);
       }
+
+      // Update status in maintenances table
       const { data, error } = await supabase
         .from("maintenances")
         .update({
@@ -238,6 +279,7 @@ function MaintenancePage() {
         toastSuccess("Maintenance accepted");
         console.log("Maintenance accepted successfully:", data);
       }
+
       setLoading(false);
       fetchData();
     } catch (error) {
@@ -527,45 +569,51 @@ function MaintenancePage() {
   const handleSaveEditMaintenance = async () => {
     try {
       setLoading(true);
-      if (editMaintenanceData) {
-        const existingMaintenance = await supabase
-          .from("maintenances")
-          .select("*")
-          .eq("id", editMaintenanceData.id)
-          .single();
-        if (existingMaintenance.data) {
-          const updatedMaintenance = {
-            assign_time: tanggal?.toISOString() || "",
-            work_time: null,
-            status: "WAITING",
-            evidence_url: "-",
-            room_id: roomData.find((room) => room.name === ruangan)?.id || 1,
-            detail: listDetail
-              .filter((detail) => checkboxValues[detail.value])
-              .map((selectedDetail) => selectedDetail.value)
-              .join(", "),
-            user_id: userData.find((user) => user.name === staff)?.id || "",
-          };
-          const { data: updateData, error: updateError } = await supabase
-            .from("maintenances")
-            .update(updatedMaintenance)
-            .eq("id", editMaintenanceData.id);
-          if (updateError) {
-            toastError("Error updating maintenance data");
-            console.error("Error updating maintenance data:", updateError);
-          } else {
-            toastSuccess("Data updated successfully");
-            console.log(updateData);
-          }
-        } else {
-          console.log("data not found");
-        }
-        fetchData();
+      if (!tanggal || !ruangan || !staff) {
+        toastError("Tanggal, Ruangan, dan Staff harus diisi.");
         setLoading(false);
-        setShowEditPopUp(false);
+        return;
       } else {
-        console.error("No maintenance data to edit.");
-        setLoading(false);
+        if (editMaintenanceData) {
+          const existingMaintenance = await supabase
+            .from("maintenances")
+            .select("*")
+            .eq("id", editMaintenanceData.id)
+            .single();
+          if (existingMaintenance.data) {
+            const updatedMaintenance = {
+              assign_time: tanggal?.toISOString() || "",
+              work_time: null,
+              status: "WAITING",
+              evidence_url: "-",
+              room_id: roomData.find((room) => room.name === ruangan)?.id || 1,
+              detail: listDetail
+                .filter((detail) => checkboxValues[detail.value])
+                .map((selectedDetail) => selectedDetail.value)
+                .join(", "),
+              user_id: userData.find((user) => user.name === staff)?.id || "",
+            };
+            const { data: updateData, error: updateError } = await supabase
+              .from("maintenances")
+              .update(updatedMaintenance)
+              .eq("id", editMaintenanceData.id);
+            if (updateError) {
+              toastError("Error updating maintenance data");
+              console.error("Error updating maintenance data:", updateError);
+            } else {
+              toastSuccess("Data updated successfully");
+              console.log(updateData);
+            }
+          } else {
+            console.log("data not found");
+          }
+          fetchData();
+          setLoading(false);
+          setShowEditPopUp(false);
+        } else {
+          console.error("No maintenance data to edit.");
+          setLoading(false);
+        }
       }
     } catch (error) {
       toastError(error as string);
@@ -773,10 +821,10 @@ function MaintenancePage() {
         }
       ></Modal>
       <div className=" pt-[136px] px-[100px] font-montserrat">
-        <h1 className="text-center text-[#4D4C7D] font-bold text-[64px]">
+        <h1 className="text-center text-[#4D4C7D] font-bold lg:text-[64px] md:text-[36px] text-[28px]">
           MAINTENANCE
         </h1>
-        <h2 className="text-center text-[#ED7D31] font-bold text-[36px]">
+        <h2 className="text-center text-[#ED7D31] font-bold lg:text-[36px] md:text-[24px] text-[20px]">
           Jumlah Maintenance:{" "}
           {role === "admin"
             ? maintenanceData.length
@@ -784,7 +832,7 @@ function MaintenancePage() {
                 (item) => item.user?.name === currentUser?.name
               ).length}
         </h2>
-        <div className="flex flex-1 justify-between mt-[75px] mb-4">
+        <div className="lg:flex flex-1 justify-between mt-[75px] mb-4">
           <div className="flex gap-3 items-center">
             <Textfield
               type={"search"}
@@ -817,11 +865,17 @@ function MaintenancePage() {
               )}
             </div>
           </div>
-          <Button
-            type="button"
-            text="Assign Maintenance"
-            onClick={() => setShowAssignMaintenance(true)}
-          />
+          <div
+            className={
+              role == "admin" ? "flex items-center mt-4 lg:mt-0" : "hidden"
+            }
+          >
+            <Button
+              type="button"
+              text="Assign Maintenance"
+              onClick={() => setShowAssignMaintenance(true)}
+            />
+          </div>
         </div>
         <Table
           data={currentItems}
@@ -834,7 +888,10 @@ function MaintenancePage() {
           <div className="flex justify-center">
             <Paginate
               current={(currentPage) => setCurrentPage(currentPage)}
-              totalPages={Math.floor(filteredData.length / 10) + 1}
+              totalPages={
+                (filteredData.length == 10 ? 0 : 1) +
+                Math.floor(filteredData.length / 10)
+              }
             />
           </div>
         </div>
