@@ -189,7 +189,7 @@ function DetailRoom() {
         console.log(data);
         setUserData(data);
         setStaffOptions(
-          userData.map((data) => ({ value: data.name, label: data.name }))
+          data.map((data) => ({ value: data.name, label: data.name }))
         );
       }
     } catch (error) {
